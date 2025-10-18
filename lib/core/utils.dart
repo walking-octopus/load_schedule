@@ -271,45 +271,52 @@ class BillUtils {
     return monthNamesShort[month.month - 1];
   }
 
+  /// Assumed average electricity price in EUR/kWh for conversions
+  /// Typical Lithuanian residential rate is around 0.15-0.25 EUR/kWh
+  static const double averageElectricityPricePerKwh = 0.20;
+
   /// Create default bill breakdown based on total amount
   static Map<String, ApplianceConsumption> createDefaultBillBreakdown(
     double totalAmount,
   ) {
+    // Convert EUR to kWh by dividing by price per kWh
+    double eurToKwh(double euros) => euros / averageElectricityPricePerKwh;
+
     return {
       'Heating': ApplianceConsumption(
         name: 'Heating',
         amount: totalAmount * 0.45,
-        kwh: totalAmount * 0.45 * 2.5,
+        kwh: eurToKwh(totalAmount * 0.45),
         color: heatingColor,
       ),
       'Water Heater': ApplianceConsumption(
         name: 'Water Heater',
         amount: totalAmount * 0.20,
-        kwh: totalAmount * 0.20 * 2.5,
+        kwh: eurToKwh(totalAmount * 0.20),
         color: waterHeaterColor,
       ),
       'Refrigerator': ApplianceConsumption(
         name: 'Refrigerator',
         amount: totalAmount * 0.12,
-        kwh: totalAmount * 0.12 * 2.5,
+        kwh: eurToKwh(totalAmount * 0.12),
         color: refrigeratorColor,
       ),
       'Washing Machine': ApplianceConsumption(
         name: 'Washing Machine',
         amount: totalAmount * 0.08,
-        kwh: totalAmount * 0.08 * 2.5,
+        kwh: eurToKwh(totalAmount * 0.08),
         color: washingMachineColor,
       ),
       'Dishwasher': ApplianceConsumption(
         name: 'Dishwasher',
         amount: totalAmount * 0.07,
-        kwh: totalAmount * 0.07 * 2.5,
+        kwh: eurToKwh(totalAmount * 0.07),
         color: dishwasherColor,
       ),
       'Other': ApplianceConsumption(
         name: 'Other',
         amount: totalAmount * 0.08,
-        kwh: totalAmount * 0.08 * 2.5,
+        kwh: eurToKwh(totalAmount * 0.08),
         color: otherColor,
       ),
     };

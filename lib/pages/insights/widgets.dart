@@ -405,9 +405,6 @@ class NationalComparisonCard extends StatelessWidget {
     final normalizedPoints =
         dataPoints.map((e) => FlSpot(e.x, e.y / maxY * 100)).toList();
 
-    // User point
-    final userPointY = StatsUtils.normalPdf(userKwh, mean, stdDev) / maxY * 100;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -440,11 +437,38 @@ class NationalComparisonCard extends StatelessWidget {
             const SizedBox(height: 20),
             Column(
               children: [
-                SizedBox(
-                  height: 200,
-                  child: LineChart(
+                Row(
+                  children: [
+                    RotatedBox(
+                      quarterTurns: 3,
+                      child: Text(
+                        'Relative Frequency',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontSize: 11,
+                            ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: SizedBox(
+                        height: 200,
+                        child: LineChart(
                     LineChartData(
-                      gridData: FlGridData(show: false),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: 25,
+                        getDrawingHorizontalLine: (value) {
+                          return FlLine(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outlineVariant
+                                .withValues(alpha: 0.3),
+                            strokeWidth: 1,
+                          );
+                        },
+                      ),
                       lineTouchData: LineTouchData(
                         enabled: true,
                         touchTooltipData: LineTouchTooltipData(
@@ -482,8 +506,28 @@ class NationalComparisonCard extends StatelessWidget {
                         ),
                       ),
                       titlesData: FlTitlesData(
-                        leftTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 35,
+                            interval: 25,
+                            getTitlesWidget: (value, meta) {
+                              // Only show labels at 0, 50, 100
+                              if (value == 0 || value == 50 || value == 100) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: Text(
+                                    '${value.toInt()}%',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          fontSize: 10,
+                                        ),
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
                         ),
                         topTitles: const AxisTitles(
                           sideTitles: SideTitles(showTitles: false),
@@ -494,10 +538,17 @@ class NationalComparisonCard extends StatelessWidget {
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
+                            reservedSize: 28,
                             interval: 200,
-                            getTitlesWidget: (value, _) => Text(
-                              '${value.toInt()}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                            getTitlesWidget: (value, _) => Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                '${value.toInt()}',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      fontSize: 11,
+                                    ),
+                              ),
                             ),
                           ),
                         ),
@@ -515,17 +566,34 @@ class NationalComparisonCard extends StatelessWidget {
                           ),
                           dotData: const FlDotData(show: false),
                         ),
-                        // User marker line
+                        // User marker line (full height)
                         LineChartBarData(
                           spots: [
                             FlSpot(userKwh, 0),
-                            FlSpot(userKwh, userPointY),
+                            FlSpot(userKwh, 120),
                           ],
                           isCurved: false,
                           color: Colors.orange,
-                          barWidth: 2,
-                          dashArray: [5, 5],
-                          dotData: const FlDotData(show: false),
+                          barWidth: 2.5,
+                          dashArray: [6, 4],
+                          dotData: FlDotData(
+                            show: true,
+                            getDotPainter: (spot, percent, barData, index) {
+                              // Only show dot at the intersection with curve
+                              if (spot.y == 120) {
+                                return FlDotCirclePainter(
+                                  radius: 5,
+                                  color: Colors.orange,
+                                  strokeWidth: 2,
+                                  strokeColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                                );
+                              }
+                              return FlDotCirclePainter(
+                                radius: 0,
+                                color: Colors.transparent,
+                              );
+                            },
+                          ),
                         ),
                       ],
                       minX: 100,
@@ -533,19 +601,36 @@ class NationalComparisonCard extends StatelessWidget {
                       minY: 0,
                       maxY: 120,
                     ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Center(
+                  child: Text(
+                    'Monthly Consumption (kWh)',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 11,
+                        ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Low consumption',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                     ),
                     Text(
                       'High consumption',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                     ),
                   ],
                 ),
