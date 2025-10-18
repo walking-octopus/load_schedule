@@ -84,9 +84,7 @@ class _InsightsPageState extends State {
       padding: const EdgeInsets.all(16),
       children: [
         BillBreakdownCard(bill: bill),
-        const SizedBox(height: 32),
         ConsumptionChart(data: consumptionData),
-        const SizedBox(height: 32),
         NationalComparisonCard(bill: bill),
       ],
     );
