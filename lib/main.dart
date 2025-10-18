@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'pages/home/page.dart';
 
 void main() {
-  runApp(const EnergySchedulerApp());
+  runApp(const PowerTimeApp());
 }
 
-class EnergySchedulerApp extends StatelessWidget {
-  const EnergySchedulerApp({super.key});
+class PowerTimeApp extends StatelessWidget {
+  const PowerTimeApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Energy Scheduler',
+      title: 'PowerTime',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFFFFC107),
