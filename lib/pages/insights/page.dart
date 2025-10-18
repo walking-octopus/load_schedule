@@ -229,12 +229,16 @@ class _InsightsPageState extends State {
                   breakdown: BillUtils.createDefaultBillBreakdown(amount),
                 );
 
+                // Capture navigator and messenger before async gap
+                final navigator = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+
                 await BillService.saveBill(bill);
                 await _loadData();
 
                 if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  navigator.pop();
+                  messenger.showSnackBar(
                     const SnackBar(content: Text('Bill added successfully')),
                   );
                 }
