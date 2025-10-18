@@ -1,89 +1,22 @@
-import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../core/bill_models.dart';
+import '../core/utils.dart';
+import 'storage.dart';
 
+/// Service for managing bills and consumption data
 class BillService {
-  static const String _billsKey = 'saved_bills';
   static final List<Bill> _bills = [];
 
-  /// Save a bill to storage
+  /// Save a bill
   static Future<void> saveBill(Bill bill) async {
-    try {
-      _bills.add(bill);
-      await _persistBills();
-    } catch (e) {
-      throw Exception('Failed to save bill: $e');
-    }
+    _bills.add(bill);
+    await StorageService.saveBills(_bills);
   }
 
   /// Load bills from storage
   static Future<void> loadBills() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonString = prefs.getString(_billsKey);
-
-      if (jsonString != null) {
-        final List<dynamic> billsJson = jsonDecode(jsonString);
-        _bills.clear();
-        _bills.addAll(
-          billsJson.map((json) => _billFromJson(json as Map<String, dynamic>)),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error loading bills: $e');
-    }
-  }
-
-  /// Persist bills to storage
-  static Future<void> _persistBills() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final billsJson = _bills.map((bill) => _billToJson(bill)).toList();
-      final jsonString = jsonEncode(billsJson);
-      await prefs.setString(_billsKey, jsonString);
-    } catch (e) {
-      throw Exception('Failed to persist bills: $e');
-    }
-  }
-
-  /// Convert Bill to JSON
-  static Map<String, dynamic> _billToJson(Bill bill) {
-    return {
-      'id': bill.id,
-      'month': bill.month.toIso8601String(),
-      'totalAmount': bill.totalAmount,
-      'breakdown': bill.breakdown.map(
-        (key, value) => MapEntry(key, {
-          'name': value.name,
-          'amount': value.amount,
-          'kwh': value.kwh,
-          'color': value.color.value,
-        }),
-      ),
-    };
-  }
-
-  /// Convert JSON to Bill
-  static Bill _billFromJson(Map<String, dynamic> json) {
-    return Bill(
-      id: json['id'] as String,
-      month: DateTime.parse(json['month'] as String),
-      totalAmount: json['totalAmount'] as double,
-      breakdown: (json['breakdown'] as Map<String, dynamic>).map((key, value) {
-        final data = value as Map<String, dynamic>;
-        return MapEntry(
-          key,
-          ApplianceConsumption(
-            name: data['name'] as String,
-            amount: data['amount'] as double,
-            kwh: data['kwh'] as double,
-            color: Color(data['color'] as int),
-          ),
-        );
-      }),
-    );
+    final loadedBills = await StorageService.loadBills();
+    _bills.clear();
+    _bills.addAll(loadedBills);
   }
 
   /// Get the latest bill
@@ -120,10 +53,10 @@ class BillService {
   /// Delete a bill
   static Future<void> deleteBill(String billId) async {
     _bills.removeWhere((bill) => bill.id == billId);
-    await _persistBills();
+    await StorageService.saveBills(_bills);
   }
 
-  // Mock data for demonstration (fallback)
+  /// Get mock bill for demonstration (fallback)
   static Bill? getMockBill() {
     final now = DateTime.now();
     final lastMonth = DateTime(now.year, now.month - 1);
@@ -132,44 +65,7 @@ class BillService {
       id: 'bill_${lastMonth.millisecondsSinceEpoch}',
       month: lastMonth,
       totalAmount: 142.50,
-      breakdown: {
-        'Heating': ApplianceConsumption(
-          name: 'Heating',
-          amount: 65.0,
-          kwh: 325.0,
-          color: const Color(0xFFFF6B6B),
-        ),
-        'Water Heater': ApplianceConsumption(
-          name: 'Water Heater',
-          amount: 28.5,
-          kwh: 142.5,
-          color: const Color(0xFF4ECDC4),
-        ),
-        'Refrigerator': ApplianceConsumption(
-          name: 'Refrigerator',
-          amount: 18.0,
-          kwh: 90.0,
-          color: const Color(0xFF45B7D1),
-        ),
-        'Washing Machine': ApplianceConsumption(
-          name: 'Washing Machine',
-          amount: 12.0,
-          kwh: 60.0,
-          color: const Color(0xFF96CEB4),
-        ),
-        'Dishwasher': ApplianceConsumption(
-          name: 'Dishwasher',
-          amount: 9.5,
-          kwh: 47.5,
-          color: const Color(0xFFFECEA8),
-        ),
-        'Other': ApplianceConsumption(
-          name: 'Other',
-          amount: 9.5,
-          kwh: 47.5,
-          color: const Color(0xFFDFE6E9),
-        ),
-      },
+      breakdown: BillUtils.createDefaultBillBreakdown(142.50),
     );
   }
 

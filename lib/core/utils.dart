@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-// import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'models.dart';
+import 'bill_models.dart';
 import '../services/optimal_t.dart';
 
 class TimeFormatter {
@@ -216,5 +217,133 @@ class ApplianceUtils {
       startTime: startTime,
       endTime: endTime,
     );
+  }
+}
+
+class BillUtils {
+  /// Month names for display
+  static const monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  /// Short month names for charts
+  static const monthNamesShort = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  /// Default appliance colors
+  static const heatingColor = Color(0xFFFF6B6B);
+  static const waterHeaterColor = Color(0xFF4ECDC4);
+  static const refrigeratorColor = Color(0xFF45B7D1);
+  static const washingMachineColor = Color(0xFF96CEB4);
+  static const dishwasherColor = Color(0xFFFECEA8);
+  static const otherColor = Color(0xFFDFE6E9);
+
+  /// Format a month for display (e.g., "January 2024")
+  static String formatMonth(DateTime month) {
+    return '${monthNames[month.month - 1]} ${month.year}';
+  }
+
+  /// Format a month for short display (e.g., "Jan")
+  static String formatMonthShort(DateTime month) {
+    return monthNamesShort[month.month - 1];
+  }
+
+  /// Create default bill breakdown based on total amount
+  static Map<String, ApplianceConsumption> createDefaultBillBreakdown(
+    double totalAmount,
+  ) {
+    return {
+      'Heating': ApplianceConsumption(
+        name: 'Heating',
+        amount: totalAmount * 0.45,
+        kwh: totalAmount * 0.45 * 2.5,
+        color: heatingColor,
+      ),
+      'Water Heater': ApplianceConsumption(
+        name: 'Water Heater',
+        amount: totalAmount * 0.20,
+        kwh: totalAmount * 0.20 * 2.5,
+        color: waterHeaterColor,
+      ),
+      'Refrigerator': ApplianceConsumption(
+        name: 'Refrigerator',
+        amount: totalAmount * 0.12,
+        kwh: totalAmount * 0.12 * 2.5,
+        color: refrigeratorColor,
+      ),
+      'Washing Machine': ApplianceConsumption(
+        name: 'Washing Machine',
+        amount: totalAmount * 0.08,
+        kwh: totalAmount * 0.08 * 2.5,
+        color: washingMachineColor,
+      ),
+      'Dishwasher': ApplianceConsumption(
+        name: 'Dishwasher',
+        amount: totalAmount * 0.07,
+        kwh: totalAmount * 0.07 * 2.5,
+        color: dishwasherColor,
+      ),
+      'Other': ApplianceConsumption(
+        name: 'Other',
+        amount: totalAmount * 0.08,
+        kwh: totalAmount * 0.08 * 2.5,
+        color: otherColor,
+      ),
+    };
+  }
+
+  /// Get total kWh consumption from a bill
+  static double getTotalKwh(Bill bill) {
+    return bill.breakdown.values.fold<double>(
+      0,
+      (sum, item) => sum + item.kwh,
+    );
+  }
+}
+
+class StatsUtils {
+  /// Calculate normal distribution probability density function
+  static double normalPdf(double x, double mean, double stdDev) {
+    final exponent = -((x - mean) * (x - mean)) / (2 * stdDev * stdDev);
+    return (1 / (stdDev * math.sqrt(2 * math.pi))) * math.exp(exponent);
+  }
+
+  /// Calculate mean of a list of numbers
+  static double mean(List<double> values) {
+    if (values.isEmpty) return 0;
+    return values.reduce((a, b) => a + b) / values.length;
+  }
+
+  /// Calculate standard deviation of a list of numbers
+  static double stdDev(List<double> values) {
+    if (values.isEmpty) return 0;
+    final avg = mean(values);
+    final variance = values
+        .map((v) => math.pow(v - avg, 2))
+        .reduce((a, b) => a + b) / values.length;
+    return math.sqrt(variance);
   }
 }

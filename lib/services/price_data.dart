@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../core/utils.dart';
 
 // TODO: Integrate North Pool data
 
@@ -132,8 +133,9 @@ class PriceDataService {
   }
 
   static Color getColorForPrice(double price, List<double> allPrices) {
-    final stats = _priceStats(allPrices);
-    final normalizedPrice = (price - stats.mean) / (stats.stdDev + 0.001);
+    final mean = StatsUtils.mean(allPrices);
+    final stdDev = StatsUtils.stdDev(allPrices);
+    final normalizedPrice = (price - mean) / (stdDev + 0.001);
     final t = ((normalizedPrice + 2) / 4).clamp(0.0, 1.0);
 
     if (t < 0.5) {
@@ -150,19 +152,4 @@ class PriceDataService {
       )!;
     }
   }
-
-  static _PriceStats _priceStats(List<double> prices) {
-    final mean = prices.reduce((a, b) => a + b) / prices.length;
-    final variance =
-        prices.map((p) => math.pow(p - mean, 2)).reduce((a, b) => a + b) /
-        prices.length;
-    final stdDev = math.sqrt(variance);
-    return _PriceStats(mean, stdDev);
-  }
-}
-
-class _PriceStats {
-  final double mean;
-  final double stdDev;
-  _PriceStats(this.mean, this.stdDev);
 }
