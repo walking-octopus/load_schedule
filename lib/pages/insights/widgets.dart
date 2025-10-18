@@ -265,7 +265,40 @@ class ConsumptionChart extends StatelessWidget {
                       barGroups: _buildBarGroups(),
                       minY: 0,
                       maxY: 800,
-                      barTouchData: BarTouchData(enabled: false),
+                      barTouchData: BarTouchData(
+                        enabled: true,
+                        touchTooltipData: BarTouchTooltipData(
+                          getTooltipColor: (group) =>
+                              Theme.of(context).colorScheme.inverseSurface,
+                          tooltipBorder: BorderSide(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outlineVariant
+                                .withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                          tooltipBorderRadius: BorderRadius.circular(8),
+                          tooltipPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                            final consumption = data[group.x.toInt()];
+                            final monthName =
+                                BillUtils.formatMonth(consumption.month);
+                            return BarTooltipItem(
+                              '${consumption.kwh.toStringAsFixed(0)} kWh\n$monthName',
+                              TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onInverseSurface,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -412,6 +445,42 @@ class NationalComparisonCard extends StatelessWidget {
                   child: LineChart(
                     LineChartData(
                       gridData: FlGridData(show: false),
+                      lineTouchData: LineTouchData(
+                        enabled: true,
+                        touchTooltipData: LineTouchTooltipData(
+                          getTooltipColor: (touchedSpot) =>
+                              Theme.of(context).colorScheme.inverseSurface,
+                          tooltipBorder: BorderSide(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outlineVariant
+                                .withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                          tooltipBorderRadius: BorderRadius.circular(8),
+                          tooltipPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          getTooltipItems: (touchedSpots) {
+                            return touchedSpots.map((spot) {
+                              // Skip the user marker line (second line)
+                              if (spot.barIndex == 1) return null;
+
+                              return LineTooltipItem(
+                                '${spot.x.toStringAsFixed(0)} kWh',
+                                TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onInverseSurface,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              );
+                            }).toList();
+                          },
+                        ),
+                      ),
                       titlesData: FlTitlesData(
                         leftTitles: const AxisTitles(
                           sideTitles: SideTitles(showTitles: false),

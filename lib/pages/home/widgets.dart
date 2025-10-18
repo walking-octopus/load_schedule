@@ -182,8 +182,15 @@ class PriceChart extends StatelessWidget {
     return LineTouchData(
       enabled: true,
       touchTooltipData: LineTouchTooltipData(
-        // tooltipBgColor: Theme.of(context).colorScheme.inverseSurface,
-        // FIXME: tooltipBgColor doesn't exist but getTooltipColor does
+        getTooltipColor: (touchedSpot) =>
+            Theme.of(context).colorScheme.inverseSurface,
+        tooltipBorder: BorderSide(
+          color: Theme.of(context)
+              .colorScheme
+              .outlineVariant
+              .withValues(alpha: 0.5),
+          width: 1,
+        ),
         tooltipBorderRadius: BorderRadius.circular(8),
         tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         getTooltipItems: (touchedSpots) => touchedSpots.map((spot) {
