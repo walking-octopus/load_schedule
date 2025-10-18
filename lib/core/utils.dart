@@ -253,13 +253,13 @@ class BillUtils {
     'Dec',
   ];
 
-  /// Default appliance colors
-  static const heatingColor = Color(0xFFFF6B6B);
-  static const waterHeaterColor = Color(0xFF4ECDC4);
-  static const refrigeratorColor = Color(0xFF45B7D1);
-  static const washingMachineColor = Color(0xFF96CEB4);
-  static const dishwasherColor = Color(0xFFFECEA8);
-  static const otherColor = Color(0xFFDFE6E9);
+  /// Default appliance colors using Material Design palette
+  static const heatingColor = Colors.deepOrange; // Heating - warm/hot
+  static const waterHeaterColor = Colors.cyan; // Water - blue/cyan
+  static const refrigeratorColor = Colors.blue; // Cooling - blue
+  static const washingMachineColor = Colors.teal; // Water appliance
+  static const dishwasherColor = Colors.amber; // Kitchen appliance
+  static const otherColor = Colors.blueGrey; // Other/miscellaneous
 
   /// Format a month for display (e.g., "January 2024")
   static String formatMonth(DateTime month) {
@@ -352,5 +352,40 @@ class StatsUtils {
         .map((v) => math.pow(v - avg, 2))
         .reduce((a, b) => a + b) / values.length;
     return math.sqrt(variance);
+  }
+
+  /// Calculate the cumulative distribution function (CDF) of normal distribution
+  /// Returns the percentile (0-100) for a given value
+  static double normalCdf(double x, double mean, double stdDev) {
+    // Standardize the value
+    final z = (x - mean) / stdDev;
+
+    // Use error function approximation for CDF
+    // CDF(z) = 0.5 * (1 + erf(z / sqrt(2)))
+    final erfValue = _erf(z / math.sqrt(2));
+    final cdf = 0.5 * (1 + erfValue);
+
+    return cdf * 100; // Convert to percentile
+  }
+
+  /// Error function approximation (Abramowitz and Stegun)
+  static double _erf(double x) {
+    // Constants for the approximation
+    const a1 = 0.254829592;
+    const a2 = -0.284496736;
+    const a3 = 1.421413741;
+    const a4 = -1.453152027;
+    const a5 = 1.061405429;
+    const p = 0.3275911;
+
+    // Save the sign of x
+    final sign = x < 0 ? -1 : 1;
+    final absX = x.abs();
+
+    // Approximation formula
+    final t = 1.0 / (1.0 + p * absX);
+    final y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * math.exp(-absX * absX);
+
+    return sign * y;
   }
 }

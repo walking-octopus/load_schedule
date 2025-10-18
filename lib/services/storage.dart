@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/models.dart';
 import '../core/bill_models.dart';
+import '../core/utils.dart';
 
 class StorageService {
   static const String _loadsKey = 'pending_loads';
@@ -205,7 +206,7 @@ class StorageService {
           'name': value.name,
           'amount': value.amount,
           'kwh': value.kwh,
-          'color': value.color.toARGB32(),
+          // Don't serialize color - derive it from appliance name on load
         }),
       ),
     };
@@ -220,13 +221,14 @@ class StorageService {
         totalAmount: json['totalAmount'] as double,
         breakdown: (json['breakdown'] as Map<String, dynamic>).map((key, value) {
           final data = value as Map<String, dynamic>;
+          final name = data['name'] as String;
           return MapEntry(
             key,
             ApplianceConsumption(
-              name: data['name'] as String,
+              name: name,
               amount: data['amount'] as double,
               kwh: data['kwh'] as double,
-              color: Color(data['color'] as int),
+              color: _getColorForAppliance(name),
             ),
           );
         }),
@@ -234,6 +236,26 @@ class StorageService {
     } catch (e) {
       debugPrint('Error parsing bill from JSON: $e');
       return null;
+    }
+  }
+
+  /// Get the standard color for an appliance based on its name
+  static Color _getColorForAppliance(String name) {
+    switch (name.toLowerCase()) {
+      case 'heating':
+        return BillUtils.heatingColor;
+      case 'water heater':
+        return BillUtils.waterHeaterColor;
+      case 'refrigerator':
+        return BillUtils.refrigeratorColor;
+      case 'washing machine':
+        return BillUtils.washingMachineColor;
+      case 'dishwasher':
+        return BillUtils.dishwasherColor;
+      case 'other':
+        return BillUtils.otherColor;
+      default:
+        return BillUtils.otherColor; // Fallback for unknown appliances
     }
   }
 }

@@ -21,7 +21,9 @@ class BillBreakdownCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
           width: 1,
         ),
       ),
@@ -32,25 +34,24 @@ class BillBreakdownCard extends StatelessWidget {
           children: [
             Text(
               'Bill Breakdown',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
               'Based on your last bill ($billMonth)',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             Text(
               '€${bill.totalAmount.toStringAsFixed(2)}',
               style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 16),
             LayoutBuilder(
@@ -134,17 +135,16 @@ class BillBreakdownCard extends StatelessWidget {
               ),
               Text(
                 '€${consumption.amount.toStringAsFixed(2)}',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 4),
               Text(
                 '• ${consumption.kwh.toStringAsFixed(0)} kWh',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -168,7 +168,9 @@ class ConsumptionChart extends StatelessWidget {
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
           width: 1,
         ),
       ),
@@ -179,17 +181,16 @@ class ConsumptionChart extends StatelessWidget {
           children: [
             Text(
               'Consumption',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
               'Historical data and model predictions for the next months',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             Column(
@@ -201,7 +202,11 @@ class ConsumptionChart extends StatelessWidget {
                   children: [
                     _buildLegendItem(context, 'Increased', Colors.red),
                     _buildLegendItem(context, 'Decreased', Colors.green),
-                    _buildLegendItem(context, 'Predicted', Colors.grey.shade400),
+                    _buildLegendItem(
+                      context,
+                      'Predicted',
+                      Colors.grey.shade400,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -216,10 +221,9 @@ class ConsumptionChart extends StatelessWidget {
                         horizontalInterval: 200,
                         getDrawingHorizontalLine: (value) {
                           return FlLine(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .outlineVariant
-                                .withValues(alpha: 0.3),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outlineVariant.withValues(alpha: 0.3),
                             strokeWidth: 1,
                           );
                         },
@@ -271,10 +275,9 @@ class ConsumptionChart extends StatelessWidget {
                           getTooltipColor: (group) =>
                               Theme.of(context).colorScheme.inverseSurface,
                           tooltipBorder: BorderSide(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .outlineVariant
-                                .withValues(alpha: 0.5),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outlineVariant.withValues(alpha: 0.5),
                             width: 1,
                           ),
                           tooltipBorderRadius: BorderRadius.circular(8),
@@ -284,14 +287,15 @@ class ConsumptionChart extends StatelessWidget {
                           ),
                           getTooltipItem: (group, groupIndex, rod, rodIndex) {
                             final consumption = data[group.x.toInt()];
-                            final monthName =
-                                BillUtils.formatMonth(consumption.month);
+                            final monthName = BillUtils.formatMonth(
+                              consumption.month,
+                            );
                             return BarTooltipItem(
                               '${consumption.kwh.toStringAsFixed(0)} kWh\n$monthName',
                               TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onInverseSurface,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onInverseSurface,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 12,
                               ),
@@ -395,6 +399,9 @@ class NationalComparisonCard extends StatelessWidget {
     const mean = 450.0;
     const stdDev = 150.0;
 
+    // Calculate user's percentile
+    final userPercentile = StatsUtils.normalCdf(userKwh, mean, stdDev);
+
     final dataPoints = List.generate(100, (i) {
       final x = 100.0 + i * 10.0; // from 100 to 1100 kWh
       return FlSpot(x, StatsUtils.normalPdf(x, mean, stdDev));
@@ -402,8 +409,9 @@ class NationalComparisonCard extends StatelessWidget {
 
     // Normalize PDF values to fit the chart visually
     final maxY = dataPoints.map((e) => e.y).reduce(max);
-    final normalizedPoints =
-        dataPoints.map((e) => FlSpot(e.x, e.y / maxY * 100)).toList();
+    final normalizedPoints = dataPoints
+        .map((e) => FlSpot(e.x, e.y / maxY * 100))
+        .toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -411,7 +419,9 @@ class NationalComparisonCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
           width: 1,
         ),
       ),
@@ -422,17 +432,16 @@ class NationalComparisonCard extends StatelessWidget {
           children: [
             Text(
               'National Comparison',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
               'Your household vs. Lithuania\'s national electricity consumption distribution',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             Column(
@@ -444,9 +453,9 @@ class NationalComparisonCard extends StatelessWidget {
                       child: Text(
                         'Relative Frequency',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              fontSize: 11,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -454,153 +463,170 @@ class NationalComparisonCard extends StatelessWidget {
                       child: SizedBox(
                         height: 200,
                         child: LineChart(
-                    LineChartData(
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: 25,
-                        getDrawingHorizontalLine: (value) {
-                          return FlLine(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .outlineVariant
-                                .withValues(alpha: 0.3),
-                            strokeWidth: 1,
-                          );
-                        },
-                      ),
-                      lineTouchData: LineTouchData(
-                        enabled: true,
-                        touchTooltipData: LineTouchTooltipData(
-                          getTooltipColor: (touchedSpot) =>
-                              Theme.of(context).colorScheme.inverseSurface,
-                          tooltipBorder: BorderSide(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .outlineVariant
-                                .withValues(alpha: 0.5),
-                            width: 1,
-                          ),
-                          tooltipBorderRadius: BorderRadius.circular(8),
-                          tooltipPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          getTooltipItems: (touchedSpots) {
-                            return touchedSpots.map((spot) {
-                              // Skip the user marker line (second line)
-                              if (spot.barIndex == 1) return null;
-
-                              return LineTooltipItem(
-                                '${spot.x.toStringAsFixed(0)} kWh',
-                                TextStyle(
+                          LineChartData(
+                            gridData: FlGridData(
+                              show: true,
+                              drawVerticalLine: false,
+                              horizontalInterval: 25,
+                              getDrawingHorizontalLine: (value) {
+                                return FlLine(
                                   color: Theme.of(context)
                                       .colorScheme
-                                      .onInverseSurface,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              );
-                            }).toList();
-                          },
-                        ),
-                      ),
-                      titlesData: FlTitlesData(
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 35,
-                            interval: 25,
-                            getTitlesWidget: (value, meta) {
-                              // Only show labels at 0, 50, 100
-                              if (value == 0 || value == 50 || value == 100) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 4),
-                                  child: Text(
-                                    '${value.toInt()}%',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                          fontSize: 10,
-                                        ),
-                                  ),
+                                      .outlineVariant
+                                      .withValues(alpha: 0.3),
+                                  strokeWidth: 1,
                                 );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ),
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 28,
-                            interval: 200,
-                            getTitlesWidget: (value, _) => Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                '${value.toInt()}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                      fontSize: 11,
-                                    ),
+                              },
+                            ),
+                            lineTouchData: LineTouchData(
+                              enabled: true,
+                              touchTooltipData: LineTouchTooltipData(
+                                getTooltipColor: (touchedSpot) => Theme.of(
+                                  context,
+                                ).colorScheme.inverseSurface,
+                                tooltipBorder: BorderSide(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant
+                                      .withValues(alpha: 0.5),
+                                  width: 1,
+                                ),
+                                tooltipBorderRadius: BorderRadius.circular(8),
+                                tooltipPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                getTooltipItems: (touchedSpots) {
+                                  return touchedSpots.map((spot) {
+                                    // Skip the user marker line (second line)
+                                    if (spot.barIndex == 1) return null;
+
+                                    return LineTooltipItem(
+                                      '${spot.x.toStringAsFixed(0)} kWh',
+                                      TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onInverseSurface,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    );
+                                  }).toList();
+                                },
                               ),
                             ),
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: normalizedPoints,
-                          isCurved: true,
-                          color: Colors.blueAccent,
-                          barWidth: 3,
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: Colors.blueAccent.withValues(alpha: 0.2),
-                          ),
-                          dotData: const FlDotData(show: false),
-                        ),
-                        // User marker line (full height)
-                        LineChartBarData(
-                          spots: [
-                            FlSpot(userKwh, 0),
-                            FlSpot(userKwh, 120),
-                          ],
-                          isCurved: false,
-                          color: Colors.orange,
-                          barWidth: 2.5,
-                          dashArray: [6, 4],
-                          dotData: FlDotData(
-                            show: true,
-                            getDotPainter: (spot, percent, barData, index) {
-                              // Only show dot at the intersection with curve
-                              if (spot.y == 120) {
-                                return FlDotCirclePainter(
-                                  radius: 5,
+                            titlesData: FlTitlesData(
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 35,
+                                  interval: 25,
+                                  getTitlesWidget: (value, meta) {
+                                    // Only show labels at 0, 50, 100
+                                    if (value == 0 ||
+                                        value == 50 ||
+                                        value == 100) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 4,
+                                        ),
+                                        child: Text(
+                                          '${value.toInt()}%',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                                fontSize: 10,
+                                              ),
+                                        ),
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
+                                ),
+                              ),
+                              topTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                              rightTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 28,
+                                  interval: 200,
+                                  getTitlesWidget: (value, _) => Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      '${value.toInt()}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                            fontSize: 11,
+                                          ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            borderData: FlBorderData(show: false),
+                            extraLinesData: ExtraLinesData(
+                              verticalLines: [
+                                VerticalLine(
+                                  x: userKwh,
                                   color: Colors.orange,
-                                  strokeWidth: 2,
-                                  strokeColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                                );
-                              }
-                              return FlDotCirclePainter(
-                                radius: 0,
-                                color: Colors.transparent,
-                              );
-                            },
+                                  strokeWidth: 2.5,
+                                  dashArray: [6, 4],
+                                  label: VerticalLineLabel(
+                                    show: true,
+                                    alignment: Alignment.topRight,
+                                    padding: const EdgeInsets.only(
+                                      left: 4,
+                                      bottom: 4,
+                                    ),
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerLow
+                                          .withValues(alpha: 0.9),
+                                    ),
+                                    labelResolver: (line) =>
+                                        ' ${userPercentile.toStringAsFixed(0)}th percentile',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            lineBarsData: [
+                              LineChartBarData(
+                                spots: normalizedPoints,
+                                isCurved: true,
+                                color: Colors.blueAccent,
+                                barWidth: 3,
+                                belowBarData: BarAreaData(
+                                  show: true,
+                                  color: Colors.blueAccent.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                                dotData: const FlDotData(show: false),
+                              ),
+                            ],
+                            minX: 100,
+                            maxX: 1100,
+                            minY: 0,
+                            maxY: 120,
                           ),
-                        ),
-                      ],
-                      minX: 100,
-                      maxX: 1100,
-                      minY: 0,
-                      maxY: 120,
-                    ),
                         ),
                       ),
                     ),
@@ -611,9 +637,9 @@ class NationalComparisonCard extends StatelessWidget {
                   child: Text(
                     'Monthly Consumption (kWh)',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 11,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -623,14 +649,14 @@ class NationalComparisonCard extends StatelessWidget {
                     Text(
                       'Low consumption',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     Text(
                       'High consumption',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
