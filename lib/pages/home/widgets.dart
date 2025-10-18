@@ -278,13 +278,16 @@ class LoadsList extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
       itemCount: loads.length,
-      itemBuilder: (context, index) => LoadListItem(
-        load: loads[index],
-        index: index,
-        onRemove: () => onRemove(loads[index].id),
-        onUndo: () => onUndo(loads[index]),
-        onTogglePin: () => onTogglePin(loads[index].id),
-      ),
+      itemBuilder: (context, index) {
+        final load = loads[index];
+        return LoadListItem(
+          load: load,
+          index: index,
+          onRemove: () => onRemove(load.id),
+          onUndo: () => onUndo(load),
+          onTogglePin: () => onTogglePin(load.id),
+        );
+      },
     );
   }
 }
@@ -310,15 +313,6 @@ class LoadListItem extends StatefulWidget {
 }
 
 class _LoadListItemState extends State<LoadListItem> {
-  late final Stream<void> _minuteStream;
-
-  @override
-  void initState() {
-    super.initState();
-    // Create a stream that emits every minute
-    _minuteStream = Stream.periodic(const Duration(minutes: 1));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Dismissible(
@@ -326,38 +320,46 @@ class _LoadListItemState extends State<LoadListItem> {
       direction: DismissDirection.horizontal,
       background: _buildPinBackground(context),
       secondaryBackground: _buildDeleteBackground(context),
+      dismissThresholds: const {
+        DismissDirection.startToEnd: 0.4,
+        DismissDirection.endToStart: 0.4,
+      },
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
-          // Pin/Unpin action
+          // Pin action
           widget.onTogglePin();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                widget.load.isPinned
-                    ? '${widget.load.appliance} unpinned'
-                    : '${widget.load.appliance} pinned as recurring',
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  widget.load.isPinned
+                      ? '${widget.load.appliance} unpinned'
+                      : '${widget.load.appliance} pinned as recurring',
+                ),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(milliseconds: 1500),
               ),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          return false; // Don't dismiss
+            );
+          }
+          return false; // Don't dismiss for pin
         }
-        return true; // Allow dismissal for delete
+        // For delete - allow it but don't show snackbar here
+        return true;
       },
       onDismissed: (direction) {
+        // Only called for delete (endToStart)
         widget.onRemove();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${widget.load.appliance} removed'),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(label: 'Undo', onPressed: widget.onUndo),
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${widget.load.appliance} removed'),
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(label: 'Undo', onPressed: widget.onUndo),
+            ),
+          );
+        }
       },
-      child: StreamBuilder(
-        stream: _minuteStream,
-        builder: (context, snapshot) => _buildCard(context),
-      ),
+      child: _buildCard(context),
     );
   }
 

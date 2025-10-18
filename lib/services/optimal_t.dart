@@ -1,6 +1,5 @@
 import '../core/models.dart';
 import 'price_data.dart';
-import '../core/constants.dart';
 
 class OptimalTimeService {
   /// Calculates potential savings within a specific time window
@@ -10,11 +9,6 @@ class OptimalTimeService {
     DateTime? endTime,
   }) {
     final priceData = PriceDataService.generatePriceData();
-    if (priceData.isEmpty) {
-      // Fallback to hardcoded calculation
-      final energyKwh = (watts / 1000) * 1;
-      return energyKwh * (AppConstants.peakRate - AppConstants.offPeakRate);
-    }
 
     // Filter prices to only those within the operating window
     List<double> prices;
@@ -31,9 +25,8 @@ class OptimalTimeService {
     }
 
     if (prices.isEmpty) {
-      // Fallback if no prices in window
-      final energyKwh = (watts / 1000) * 1;
-      return energyKwh * (AppConstants.peakRate - AppConstants.offPeakRate);
+      // No prices in window, cannot calculate savings
+      return 0.0;
     }
 
     // Calculate savings: difference between max and min price in window

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models.dart';
+import '../../services/storage.dart';
 import '../schedule/page.dart';
 import 'widgets.dart';
 
@@ -13,25 +14,48 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final List<ScheduledLoad> pendingLoads = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPersistedLoads();
+  }
+
+  Future<void> _loadPersistedLoads() async {
+    final loads = await StorageService.loadLoads();
+    setState(() {
+      pendingLoads.addAll(loads);
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _saveLoads() async {
+    await StorageService.saveLoads(pendingLoads);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       // appBar: AppBar(title: const Text('PowerTime')),
-      body: Column(
-        children: [
-          const PriceChartCard(),
-          Expanded(
-            child: pendingLoads.isEmpty
-                ? const EmptyStateWidget()
-                : LoadsList(
-                    loads: pendingLoads,
-                    onRemove: _handleRemoveLoad,
-                    onUndo: _handleUndoRemove,
-                    onTogglePin: _handleTogglePin,
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  const PriceChartCard(),
+                  Expanded(
+                    child: pendingLoads.isEmpty
+                        ? const EmptyStateWidget()
+                        : LoadsList(
+                            loads: pendingLoads,
+                            onRemove: _handleRemoveLoad,
+                            onUndo: _handleUndoRemove,
+                            onTogglePin: _handleTogglePin,
+                          ),
                   ),
-          ),
-        ],
+                ],
+              ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _navigateToSchedulePage,
@@ -48,6 +72,7 @@ class _HomePageState extends State<HomePage> {
     );
     if (result != null && result is ScheduledLoad) {
       setState(() => pendingLoads.add(result));
+      await _saveLoads();
     }
   }
 
@@ -55,12 +80,14 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       pendingLoads.removeWhere((load) => load.id == id);
     });
+    _saveLoads();
   }
 
   void _handleUndoRemove(ScheduledLoad load) {
     setState(() {
       pendingLoads.add(load);
     });
+    _saveLoads();
   }
 
   void _handleTogglePin(String id) {
@@ -69,7 +96,7 @@ class _HomePageState extends State<HomePage> {
       if (index != -1) {
         final load = pendingLoads[index];
         pendingLoads[index] = ScheduledLoad(
-          id: load.id, // Preserve the unique ID
+          id: load.id,
           appliance: load.appliance,
           icon: load.icon,
           loadWatts: load.loadWatts,
@@ -79,5 +106,6 @@ class _HomePageState extends State<HomePage> {
         );
       }
     });
+    _saveLoads();
   }
 }
