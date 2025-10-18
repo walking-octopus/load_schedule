@@ -19,12 +19,46 @@ class _ScheduleLoadPageState extends State<ScheduleLoadPage> {
   ApplianceOption? selectedAppliance;
   ScheduleMode scheduleMode = ScheduleMode.relative;
   double relativeDelay = 60;
-  RangeValues absoluteWindow = const RangeValues(0, 120);
+  late RangeValues absoluteWindow;
   bool isPinned = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize window to 07:00-22:00 range
+    var minTime = TimeFormatter.minutesToHour(7);
+    var maxTime = TimeFormatter.minutesToHour(22);
+
+    // Ensure both times are on the same day (if min > max, both should be tomorrow)
+    if (minTime > maxTime) {
+      maxTime += 1440; // Add 24 hours to maxTime to make it tomorrow
+    }
+
+    absoluteWindow = RangeValues(
+      minTime.toDouble(),
+      (minTime + 120).toDouble().clamp(minTime.toDouble(), maxTime.toDouble()),
+    );
+
+    // Add listeners for validation
+    customNameController.addListener(_validateInputs);
+    customWattsController.addListener(_validateInputs);
+  }
+
+  void _validateInputs() {
+    setState(() {
+      nameValid = customNameController.text.isNotEmpty;
+      wattsValid = customWattsController.text.isNotEmpty &&
+          int.tryParse(customWattsController.text) != null;
+    });
+  }
 
   final TextEditingController customNameController = TextEditingController();
   final TextEditingController customWattsController = TextEditingController();
+  final FocusNode nameFocusNode = FocusNode();
+  final FocusNode wattsFocusNode = FocusNode();
   bool showCustomInputs = false;
+  bool nameValid = true;
+  bool wattsValid = true;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +86,12 @@ class _ScheduleLoadPageState extends State<ScheduleLoadPage> {
                   selectedAppliance = appliance;
                   showCustomInputs = appliance.name == 'Custom Load';
                 });
+                if (showCustomInputs) {
+                  // Auto-focus name field when Custom Load is selected
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    nameFocusNode.requestFocus();
+                  });
+                }
               },
             ),
           ),
@@ -59,25 +99,26 @@ class _ScheduleLoadPageState extends State<ScheduleLoadPage> {
             CustomApplianceInputs(
               nameController: customNameController,
               wattsController: customWattsController,
+              nameFocusNode: nameFocusNode,
+              wattsFocusNode: wattsFocusNode,
+              nameValid: nameValid,
+              wattsValid: wattsValid,
             ),
           const Divider(height: 1),
-          Expanded(
-            flex: 2,
-            child: ScheduleSettings(
-              scheduleMode: scheduleMode,
-              relativeDelay: relativeDelay,
-              absoluteWindow: absoluteWindow,
-              isPinned: isPinned,
-              selectedAppliance: selectedAppliance,
-              showCustomInputs: showCustomInputs,
-              onScheduleModeChanged: (mode) =>
-                  setState(() => scheduleMode = mode),
-              onRelativeDelayChanged: (delay) =>
-                  setState(() => relativeDelay = delay),
-              onAbsoluteWindowChanged: (window) =>
-                  setState(() => absoluteWindow = window),
-              onPinnedChanged: (pinned) => setState(() => isPinned = pinned),
-            ),
+          ScheduleSettings(
+            scheduleMode: scheduleMode,
+            relativeDelay: relativeDelay,
+            absoluteWindow: absoluteWindow,
+            isPinned: isPinned,
+            selectedAppliance: selectedAppliance,
+            showCustomInputs: showCustomInputs,
+            onScheduleModeChanged: (mode) =>
+                setState(() => scheduleMode = mode),
+            onRelativeDelayChanged: (delay) =>
+                setState(() => relativeDelay = delay),
+            onAbsoluteWindowChanged: (window) =>
+                setState(() => absoluteWindow = window),
+            onPinnedChanged: (pinned) => setState(() => isPinned = pinned),
           ),
           SafeArea(
             child: Padding(
@@ -85,9 +126,10 @@ class _ScheduleLoadPageState extends State<ScheduleLoadPage> {
               child: SizedBox(
                 width: double.infinity,
                 height: 48,
-                child: FilledButton(
+                child: FilledButton.icon(
                   onPressed: _canSchedule() ? _handleSchedule : null,
-                  child: const Text('Schedule', style: TextStyle(fontSize: 16)),
+                  icon: const Icon(Icons.check_circle),
+                  label: const Text('Schedule', style: TextStyle(fontSize: 16)),
                 ),
               ),
             ),
@@ -114,6 +156,9 @@ class _ScheduleLoadPageState extends State<ScheduleLoadPage> {
     final watts = showCustomInputs
         ? int.tryParse(customWattsController.text) ?? 0
         : selectedAppliance!.watts;
+    final icon = showCustomInputs
+        ? Icons.power_outlined
+        : selectedAppliance!.icon;
 
     Duration minTime;
     Duration maxTime;
@@ -130,6 +175,7 @@ class _ScheduleLoadPageState extends State<ScheduleLoadPage> {
       context,
       ScheduledLoad(
         appliance: appliance,
+        icon: icon,
         loadWatts: watts,
         minTimeLeft: minTime,
         maxTimeLeft: maxTime,
@@ -142,6 +188,8 @@ class _ScheduleLoadPageState extends State<ScheduleLoadPage> {
   void dispose() {
     customNameController.dispose();
     customWattsController.dispose();
+    nameFocusNode.dispose();
+    wattsFocusNode.dispose();
     super.dispose();
   }
 }
@@ -246,36 +294,65 @@ class ApplianceSelector extends StatelessWidget {
 class CustomApplianceInputs extends StatelessWidget {
   final TextEditingController nameController;
   final TextEditingController wattsController;
+  final FocusNode nameFocusNode;
+  final FocusNode wattsFocusNode;
+  final bool nameValid;
+  final bool wattsValid;
 
   const CustomApplianceInputs({
     super.key,
     required this.nameController,
     required this.wattsController,
+    required this.nameFocusNode,
+    required this.wattsFocusNode,
+    required this.nameValid,
+    required this.wattsValid,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Column(
         children: [
           TextField(
             controller: nameController,
+            focusNode: nameFocusNode,
+            textInputAction: TextInputAction.next,
+            onSubmitted: (_) => wattsFocusNode.requestFocus(),
             decoration: InputDecoration(
               labelText: 'Appliance name',
+              errorText: !nameValid && nameController.text.isNotEmpty
+                  ? 'Name is required'
+                  : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: !nameValid && nameController.text.isNotEmpty
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(context).colorScheme.outline,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: wattsController,
+            focusNode: wattsFocusNode,
             keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
             decoration: InputDecoration(
               labelText: 'Power (Watts)',
+              errorText: !wattsValid && wattsController.text.isNotEmpty
+                  ? 'Enter a valid number'
+                  : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: !wattsValid && wattsController.text.isNotEmpty
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(context).colorScheme.outline,
+                ),
               ),
             ),
           ),
@@ -313,12 +390,12 @@ class ScheduleSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
             Row(
               children: [
                 Expanded(
@@ -330,10 +407,11 @@ class ScheduleSettings extends StatelessWidget {
                   ),
                 ),
                 FilterChip(
-                  label: const Text('Daily'),
+                  label: const Text('Recurring'),
                   avatar: const Icon(Icons.repeat, size: 18),
                   selected: isPinned,
                   onSelected: onPinnedChanged,
+                  showCheckmark: false,
                 ),
               ],
             ),
@@ -370,12 +448,16 @@ class ScheduleSettings extends StatelessWidget {
             if (selectedAppliance != null && !showCustomInputs)
               Padding(
                 padding: const EdgeInsets.only(top: 24),
-                child: SavingsEstimate(watts: selectedAppliance!.watts),
+                child: SavingsEstimate(
+                  watts: selectedAppliance!.watts,
+                  scheduleMode: scheduleMode,
+                  relativeDelay: relativeDelay,
+                  absoluteWindow: absoluteWindow,
+                ),
               ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -444,6 +526,14 @@ class AbsoluteModeSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var minTime = TimeFormatter.minutesToHour(7); // 07:00
+    var maxTime = TimeFormatter.minutesToHour(22); // 22:00
+
+    // Ensure both times are on the same day (if min > max, both should be tomorrow)
+    if (minTime > maxTime) {
+      maxTime += 1440; // Add 24 hours to maxTime to make it tomorrow
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -503,10 +593,13 @@ class AbsoluteModeSettings extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         RangeSlider(
-          values: window,
-          min: 0,
-          max: AppConstants.maxAbsoluteWindowMinutes,
-          divisions: 96,
+          values: RangeValues(
+            window.start.clamp(minTime.toDouble(), maxTime.toDouble()),
+            window.end.clamp(minTime.toDouble(), maxTime.toDouble()),
+          ),
+          min: minTime.toDouble(),
+          max: maxTime.toDouble(),
+          divisions: ((maxTime - minTime) / 15).round(),
           labels: RangeLabels(
             TimeFormatter.formatTimeFromMinutes(window.start.round()),
             TimeFormatter.formatTimeFromMinutes(window.end.round()),
@@ -520,12 +613,33 @@ class AbsoluteModeSettings extends StatelessWidget {
 
 class SavingsEstimate extends StatelessWidget {
   final int watts;
+  final ScheduleMode scheduleMode;
+  final double relativeDelay;
+  final RangeValues absoluteWindow;
 
-  const SavingsEstimate({super.key, required this.watts});
+  const SavingsEstimate({
+    super.key,
+    required this.watts,
+    required this.scheduleMode,
+    required this.relativeDelay,
+    required this.absoluteWindow,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final potentialSavings = ApplianceUtils.calculatePotentialSavings(watts);
+    final now = DateTime.now();
+    final startTime = scheduleMode == ScheduleMode.relative
+        ? now
+        : now.add(Duration(minutes: absoluteWindow.start.round()));
+    final endTime = scheduleMode == ScheduleMode.relative
+        ? now.add(Duration(minutes: relativeDelay.round()))
+        : now.add(Duration(minutes: absoluteWindow.end.round()));
+
+    final potentialSavings = ApplianceUtils.potentialSavings(
+      watts,
+      startTime: startTime,
+      endTime: endTime,
+    );
 
     return Container(
       padding: const EdgeInsets.all(16),
