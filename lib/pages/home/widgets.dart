@@ -15,17 +15,33 @@ class PriceChartCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          width: 1,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Energy Price Forecast',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+            Row(
+              children: [
+                Text(
+                  'Energy Price Forecast',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.bolt,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 24,
+                ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(
@@ -35,7 +51,7 @@ class PriceChartCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const SizedBox(height: 280, child: PriceChart()),
+            const SizedBox(height: 240, child: PriceChart()),
           ],
         ),
       ),
@@ -50,16 +66,39 @@ class PriceChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceData = PriceDataService.generatePriceData();
     final prices = priceData.map((spot) => spot.y).toList().cast<double>();
+    final currentHour = DateTime.now().hour.toDouble();
 
     return LineChart(
       LineChartData(
         gridData: _buildGridData(context),
         titlesData: _buildTitlesData(context),
         borderData: FlBorderData(show: false),
-        minX: 0,
-        maxX: 24,
-        lineTouchData: _buildTouchData(context),
+        minX: 7,
+        maxX: 22,
+        lineTouchData: _buildTouchData(context, priceData, prices),
         lineBarsData: [_buildLineBarData(context, priceData, prices)],
+        extraLinesData: ExtraLinesData(
+          verticalLines: [
+            if (currentHour >= 7 && currentHour <= 22)
+              VerticalLine(
+                x: currentHour,
+                color: Theme.of(context).colorScheme.primary,
+                strokeWidth: 2,
+                dashArray: [4, 4],
+                label: VerticalLineLabel(
+                  show: true,
+                  alignment: Alignment.topRight,
+                  padding: const EdgeInsets.only(left: 8, bottom: 4),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                  labelResolver: (line) => 'Now',
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -93,7 +132,7 @@ class PriceChart extends StatelessWidget {
         sideTitles: SideTitles(
           showTitles: true,
           reservedSize: 28,
-          interval: 4,
+          interval: 3,
           getTitlesWidget: (value, meta) => _buildBottomTitle(context, value),
         ),
       ),
@@ -117,37 +156,43 @@ class PriceChart extends StatelessWidget {
   }
 
   Widget _buildBottomTitle(BuildContext context, double value) {
-    if (value == 24) return const SizedBox.shrink();
-    final now = DateTime.now();
-    final targetTime = now.add(Duration(hours: value.toInt()));
-    final hour = targetTime.hour;
+    if (value == 22) return const SizedBox.shrink();
+    final hour = value.toInt();
+    final currentHour = DateTime.now().hour;
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Text(
         '${hour.toString().padLeft(2, '0')}:00',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: value == 0
+          color: hour == currentHour
               ? Theme.of(context).colorScheme.primary
               : Theme.of(context).colorScheme.onSurfaceVariant,
           fontSize: 11,
-          fontWeight: value == 0 ? FontWeight.w600 : FontWeight.normal,
+          fontWeight: hour == currentHour ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
     );
   }
 
-  LineTouchData _buildTouchData(BuildContext context) {
+  LineTouchData _buildTouchData(
+    BuildContext context,
+    List<FlSpot> priceData,
+    List<double> prices,
+  ) {
     return LineTouchData(
       enabled: true,
       touchTooltipData: LineTouchTooltipData(
+        // tooltipBgColor: Theme.of(context).colorScheme.inverseSurface,
+        // FIXME: tooltipBgColor doesn't exist but getTooltipColor does
+        tooltipBorderRadius: BorderRadius.circular(8),
         tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         getTooltipItems: (touchedSpots) => touchedSpots.map((spot) {
-          final now = DateTime.now();
-          final targetTime = now.add(Duration(hours: spot.x.toInt()));
-          final hour = targetTime.hour.toString().padLeft(2, '0');
-          final minute = targetTime.minute.toString().padLeft(2, '0');
+          final hour = spot.x.floor();
+          final minuteFraction = spot.x - hour;
+          final minute = (minuteFraction * 60).round();
+          final timeStr = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
           return LineTooltipItem(
-            '${spot.y.toStringAsFixed(1)}¢/kWh\n$hour:$minute',
+            '${spot.y.toStringAsFixed(1)} ¢/kWh\n$timeStr',
             TextStyle(
               color: Theme.of(context).colorScheme.onInverseSurface,
               fontWeight: FontWeight.w600,
@@ -158,18 +203,20 @@ class PriceChart extends StatelessWidget {
       ),
       getTouchedSpotIndicator: (barData, spotIndexes) {
         return spotIndexes.map((index) {
+          final spot = barData.spots[index];
+          final priceColor = PriceDataService.getColorForPrice(spot.y, prices);
+
           return TouchedSpotIndicatorData(
-            FlLine(
-              color: Theme.of(context).colorScheme.primary,
-              strokeWidth: 2,
-            ),
+            FlLine(color: priceColor, strokeWidth: 2, dashArray: [4, 4]),
             FlDotData(
               getDotPainter: (spot, percent, barData, index) {
                 return FlDotCirclePainter(
-                  radius: 4,
-                  color: Theme.of(context).colorScheme.primary,
+                  radius: 5,
+                  color: priceColor,
                   strokeWidth: 2,
-                  strokeColor: Theme.of(context).colorScheme.surface,
+                  strokeColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest,
                 );
               },
             ),
@@ -186,8 +233,8 @@ class PriceChart extends StatelessWidget {
   ) {
     return LineChartBarData(
       spots: priceData,
-      isCurved: true,
-      curveSmoothness: 0.35,
+      // isCurved: true,
+      // curveSmoothness: 0.35,
       preventCurveOverShooting: true,
       color: Theme.of(context).colorScheme.primary,
       barWidth: 4,
@@ -214,36 +261,40 @@ class PriceChart extends StatelessWidget {
 
 class LoadsList extends StatelessWidget {
   final List loads;
-  final Function(int) onRemove;
-  final Function(int, ScheduledLoad) onUndo;
+  final Function(String) onRemove;
+  final Function(ScheduledLoad) onUndo;
+  final Function(String) onTogglePin;
 
   const LoadsList({
     super.key,
     required this.loads,
     required this.onRemove,
     required this.onUndo,
+    required this.onTogglePin,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
       itemCount: loads.length,
       itemBuilder: (context, index) => LoadListItem(
         load: loads[index],
         index: index,
-        onRemove: () => onRemove(index),
-        onUndo: () => onUndo(index, loads[index]),
+        onRemove: () => onRemove(loads[index].id),
+        onUndo: () => onUndo(loads[index]),
+        onTogglePin: () => onTogglePin(loads[index].id),
       ),
     );
   }
 }
 
-class LoadListItem extends StatelessWidget {
+class LoadListItem extends StatefulWidget {
   final ScheduledLoad load;
   final int index;
   final VoidCallback onRemove;
   final VoidCallback onUndo;
+  final VoidCallback onTogglePin;
 
   const LoadListItem({
     super.key,
@@ -251,29 +302,83 @@ class LoadListItem extends StatelessWidget {
     required this.index,
     required this.onRemove,
     required this.onUndo,
+    required this.onTogglePin,
   });
+
+  @override
+  State<LoadListItem> createState() => _LoadListItemState();
+}
+
+class _LoadListItemState extends State<LoadListItem> {
+  late final Stream<void> _minuteStream;
+
+  @override
+  void initState() {
+    super.initState();
+    // Create a stream that emits every minute
+    _minuteStream = Stream.periodic(const Duration(minutes: 1));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Dismissible(
-      key: Key('${load.appliance}_$index'),
-      direction: DismissDirection.endToStart,
-      background: _buildDismissBackground(context),
+      key: Key(widget.load.id),
+      direction: DismissDirection.horizontal,
+      background: _buildPinBackground(context),
+      secondaryBackground: _buildDeleteBackground(context),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          // Pin/Unpin action
+          widget.onTogglePin();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                widget.load.isPinned
+                    ? '${widget.load.appliance} unpinned'
+                    : '${widget.load.appliance} pinned as recurring',
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return false; // Don't dismiss
+        }
+        return true; // Allow dismissal for delete
+      },
       onDismissed: (direction) {
-        onRemove();
+        widget.onRemove();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${load.appliance} removed'),
+            content: Text('${widget.load.appliance} removed'),
             behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(label: 'Undo', onPressed: onUndo),
+            action: SnackBarAction(label: 'Undo', onPressed: widget.onUndo),
           ),
         );
       },
-      child: _buildCard(context),
+      child: StreamBuilder(
+        stream: _minuteStream,
+        builder: (context, snapshot) => _buildCard(context),
+      ),
     );
   }
 
-  Widget _buildDismissBackground(BuildContext context) {
+  Widget _buildPinBackground(BuildContext context) {
+    return Container(
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.only(left: 24),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        widget.load.isPinned ? Icons.push_pin_outlined : Icons.push_pin,
+        color: Theme.of(context).colorScheme.onTertiaryContainer,
+        size: 24,
+      ),
+    );
+  }
+
+  Widget _buildDeleteBackground(BuildContext context) {
     return Container(
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.only(right: 24),
@@ -302,12 +407,16 @@ class LoadListItem extends StatelessWidget {
             _buildIcon(context),
             const SizedBox(width: 16),
             Expanded(child: _buildInfo(context)),
-            const SizedBox(width: 8),
+            const SizedBox(width: 16),
             Text(
-              TimeFormatter.formatScheduleTime(load),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              TimeFormatter.formatArrivalTimes(widget.load),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                height: 1.2,
               ),
+              textAlign: TextAlign.right,
             ),
           ],
         ),
@@ -316,17 +425,13 @@ class LoadListItem extends StatelessWidget {
   }
 
   Widget _buildIcon(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 40,
       height: 40,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
       child: Icon(
-        ApplianceUtils.getIcon(load.appliance),
-        color: Theme.of(context).colorScheme.onPrimaryContainer,
-        size: 20,
+        widget.load.icon,
+        color: Theme.of(context).colorScheme.onSurface,
+        size: 24,
       ),
     );
   }
@@ -336,7 +441,7 @@ class LoadListItem extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          load.appliance,
+          widget.load.appliance,
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
@@ -345,12 +450,12 @@ class LoadListItem extends StatelessWidget {
         Row(
           children: [
             Text(
-              '${(load.loadWatts / 1000).toStringAsFixed(1)} kW',
+              '${(widget.load.loadWatts / 1000).toStringAsFixed(1)} kW',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            if (load.isPinned) ...[
+            if (widget.load.isPinned) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Container(
@@ -369,7 +474,7 @@ class LoadListItem extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'Daily',
+                'Recurring',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
