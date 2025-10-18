@@ -41,7 +41,7 @@ jobs:
         run: flutter analyze --no-fatal-infos
 
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -51,7 +51,7 @@ jobs:
           retention-days: 30
 
       - name: Build Web
-        run: flutter build web --release --base-href /load_schedule/
+        run: flutter build web --release --base-href /load_schedule/ --no-tree-shake-icons
 
       - name: Upload web artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
