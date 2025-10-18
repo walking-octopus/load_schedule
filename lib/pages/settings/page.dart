@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -15,6 +16,8 @@ class _SettingsPageState extends State<SettingsPage> {
   final _formKey = GlobalKey<FormState>();
   final _addressController = TextEditingController();
   bool _fetchingLocation = false;
+  Timer? _debounce;
+  List<AddressSuggestion> _addressSuggestions = [];
 
   // Your Home
   String _address = '';
@@ -53,8 +56,31 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _addressController.dispose();
     super.dispose();
+  }
+
+  Future<void> _searchAddress(String query) async {
+    if (query.isEmpty) {
+      setState(() => _addressSuggestions = []);
+      return;
+    }
+
+    final suggestions = await GeocodingService.searchAddress(query);
+    if (mounted) {
+      setState(() => _addressSuggestions = suggestions);
+    }
+  }
+
+  void _onAddressChanged(String value) {
+    // Cancel previous timer
+    _debounce?.cancel();
+
+    // Set new timer for debouncing (wait 500ms after user stops typing)
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _searchAddress(value);
+    });
   }
 
   Future<void> _fetchGPSLocation() async {
@@ -79,7 +105,9 @@ class _SettingsPageState extends State<SettingsPage> {
       if (permission == LocationPermission.deniedForever) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location permission permanently denied')),
+            const SnackBar(
+              content: Text('Location permission permanently denied'),
+            ),
           );
         }
         setState(() => _fetchingLocation = false);
@@ -109,9 +137,9 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to get location')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to get location')));
       }
     } finally {
       if (mounted) {
@@ -123,9 +151,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Household Settings'),
-      ),
+      appBar: AppBar(title: const Text('Household Settings')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -180,27 +206,62 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildAddressField() {
-    return TextFormField(
-      controller: _addressController,
-      decoration: InputDecoration(
-        labelText: 'Address',
-        border: const OutlineInputBorder(),
-        suffixIcon: _fetchingLocation
-            ? const Padding(
-                padding: EdgeInsets.all(12.0),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            : IconButton(
-                icon: const Icon(Icons.my_location),
-                onPressed: _fetchGPSLocation,
-                tooltip: 'Use GPS location',
+    return Autocomplete<AddressSuggestion>(
+      optionsBuilder: (TextEditingValue textEditingValue) async {
+        if (textEditingValue.text.isEmpty) {
+          return const Iterable<AddressSuggestion>.empty();
+        }
+        return _addressSuggestions;
+      },
+      displayStringForOption: (AddressSuggestion option) => option.displayName,
+      onSelected: (AddressSuggestion selection) {
+        setState(() {
+          _address = selection.displayName;
+          _latitude = selection.latitude;
+          _longitude = selection.longitude;
+          _addressController.text = selection.displayName;
+        });
+      },
+      fieldViewBuilder:
+          (
+            BuildContext context,
+            TextEditingController controller,
+            FocusNode focusNode,
+            VoidCallback onFieldSubmitted,
+          ) {
+            // Sync our controller with the autocomplete controller
+            if (controller.text != _addressController.text) {
+              controller.text = _addressController.text;
+            }
+
+            return TextFormField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                labelText: 'Address',
+                border: const OutlineInputBorder(),
+                suffixIcon: _fetchingLocation
+                    ? const Padding(
+                        padding: EdgeInsets.all(12.0),
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.my_location),
+                        onPressed: _fetchGPSLocation,
+                        tooltip: 'Use GPS location',
+                      ),
               ),
-      ),
-      onChanged: (value) => setState(() => _address = value),
+              onChanged: (value) {
+                setState(() => _address = value);
+                _addressController.text = value;
+                _onAddressChanged(value);
+              },
+            );
+          },
     );
   }
 
@@ -309,15 +370,17 @@ class _SettingsPageState extends State<SettingsPage> {
         Wrap(
           spacing: 8,
           children: ['Electric', 'Gas', 'Oil', 'Heat Pump', 'Other']
-              .map((type) => ChoiceChip(
-                    label: Text(type),
-                    selected: _heatingType == type,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() => _heatingType = type);
-                      }
-                    },
-                  ))
+              .map(
+                (type) => ChoiceChip(
+                  label: Text(type),
+                  selected: _heatingType == type,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() => _heatingType = type);
+                    }
+                  },
+                ),
+              )
               .toList(),
         ),
       ],
@@ -353,10 +416,7 @@ class _SettingsPageState extends State<SettingsPage> {
           alignment: Alignment.centerLeft,
           child: SegmentedButton<String>(
             segments: efficiencyLevels
-                .map((level) => ButtonSegment(
-                      value: level,
-                      label: Text(level),
-                    ))
+                .map((level) => ButtonSegment(value: level, label: Text(level)))
                 .toList(),
             selected: {efficiency},
             onSelectionChanged: (Set<String> newSelection) {
@@ -430,6 +490,18 @@ class _SettingsPageState extends State<SettingsPage> {
       onPressed: () async {
         if (_formKey.currentState!.validate()) {
           try {
+            // If user typed an address but didn't select from suggestions,
+            // geocode it to get coordinates
+            if (_address.isNotEmpty && _latitude == 0.0 && _longitude == 0.0) {
+              final suggestions = await GeocodingService.searchAddress(
+                _address,
+              );
+              if (suggestions.isNotEmpty) {
+                _latitude = suggestions.first.latitude;
+                _longitude = suggestions.first.longitude;
+              }
+            }
+
             // Create household settings
             final settings = settings_storage.HouseholdSettings(
               address: _address,
@@ -452,10 +524,12 @@ class _SettingsPageState extends State<SettingsPage> {
               evDailyKm: _hasEV ? _dailyKm : 0.0,
               evBatteryCapacity: _hasEV ? _batteryCapacity : 0.0,
             );
-            
+
             // Save settings
-            await settings_storage.SettingsStorageService.saveSettings(settings);
-            
+            await settings_storage.SettingsStorageService.saveSettings(
+              settings,
+            );
+
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Settings saved successfully')),
