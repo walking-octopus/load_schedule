@@ -17,7 +17,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(title: const Text('Energy Scheduler')),
+      // appBar: AppBar(title: const Text('PowerTime')),
       body: Column(
         children: [
           const PriceChartCard(),
@@ -28,6 +28,7 @@ class _HomePageState extends State<HomePage> {
                     loads: pendingLoads,
                     onRemove: _handleRemoveLoad,
                     onUndo: _handleUndoRemove,
+                    onTogglePin: _handleTogglePin,
                   ),
           ),
         ],
@@ -50,11 +51,33 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _handleRemoveLoad(int index) {
-    setState(() => pendingLoads.removeAt(index));
+  void _handleRemoveLoad(String id) {
+    setState(() {
+      pendingLoads.removeWhere((load) => load.id == id);
+    });
   }
 
-  void _handleUndoRemove(int index, ScheduledLoad load) {
-    setState(() => pendingLoads.insert(index, load));
+  void _handleUndoRemove(ScheduledLoad load) {
+    setState(() {
+      pendingLoads.add(load);
+    });
+  }
+
+  void _handleTogglePin(String id) {
+    setState(() {
+      final index = pendingLoads.indexWhere((load) => load.id == id);
+      if (index != -1) {
+        final load = pendingLoads[index];
+        pendingLoads[index] = ScheduledLoad(
+          id: load.id, // Preserve the unique ID
+          appliance: load.appliance,
+          icon: load.icon,
+          loadWatts: load.loadWatts,
+          minTimeLeft: load.minTimeLeft,
+          maxTimeLeft: load.maxTimeLeft,
+          isPinned: !load.isPinned,
+        );
+      }
+    });
   }
 }
