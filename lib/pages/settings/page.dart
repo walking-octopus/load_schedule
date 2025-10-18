@@ -487,6 +487,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildSaveButton() {
     return FilledButton(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(48),
+        textStyle: const TextStyle(fontSize: 16),
+      ),
       onPressed: () async {
         if (_formKey.currentState!.validate()) {
           try {
