@@ -1,16 +1,41 @@
-# load_schedule
+# PowerTime ⚡
 
-A new Flutter project.
+Schedule heavy loads for optimal dynamic tariff.
 
-## Getting Started
+A Flutter app that helps you schedule high-power appliances (washing machines, EVs, water heaters, etc.) to run during off-peak electricity pricing periods, saving you money on your energy bills.
 
-This project is a starting point for a Flutter application.
+**[🌐 Live Demo](https://walking-octopus.github.io/load_schedule/)** • **[📱 Download APK](https://github.com/walking-octopus/load_schedule/actions)** (Actions → Latest run → Artifacts)
 
-A few resources to get you started if this is your first Flutter project:
+## Features
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- 📊 Live energy price forecast visualization
+- 🔌 12+ preset appliances (or add custom loads)
+- ⏰ Smart scheduling with optimal time windows
+- 💰 Savings estimates for each scheduled load
+- 🔁 Recurring load scheduling
+- 🎯 Beautiful Material Design 3 UI
+- 🔧 An accurate control-theory model of tariff prices
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+> **Note:** Built as a hackathon project featuring a sophisticated control theory-based tariff pricing model with multiple harmonics for realistic daily patterns, underdamped step response for demand peaks, Ornstein-Uhlenbeck process for stochastic price variations, and 15-minute tariff intervals aligned to real-world pricing.
+
+## Quick Start
+
+```bash
+# Install dependencies
+flutter pub get
+
+# Run on your preferred platform
+flutter run
+
+# Or build for release
+flutter build apk        # Android
+flutter build ios        # iOS
+flutter build web        # Web
+flutter build linux      # Linux
+flutter build windows    # Windows
+flutter build macos      # macOS
+```
+
+## TODO
+
+Next steps: Integrate real Nord Pool API data (currently using mock control theory model)
