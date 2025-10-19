@@ -42,11 +42,15 @@ class _InsightsPageState extends State {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const SettingsPage()),
               );
+              // Reload data after returning from settings
+              if (mounted) {
+                await _loadData();
+              }
             },
           ),
         ],
@@ -197,11 +201,15 @@ class _InsightsPageState extends State {
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const SettingsPage()),
                 );
+                // Reload data after returning from settings
+                if (mounted) {
+                  await _loadData();
+                }
               },
               icon: const Icon(Icons.settings),
               label: const Text('Configure Household'),

@@ -15,6 +15,8 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final _formKey = GlobalKey<FormState>();
   bool _fetchingLocation = false;
+  DateTime? _lastSearchTime;
+  String _lastSearchQuery = '';
 
   // Your Home
   String _address = '';
@@ -255,11 +257,35 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildAddressField() {
     return Autocomplete<AddressSuggestion>(
       optionsBuilder: (TextEditingValue textEditingValue) async {
-        if (textEditingValue.text.isEmpty) {
+        final query = textEditingValue.text;
+
+        if (query.isEmpty || query.length < 3) {
           return const Iterable<AddressSuggestion>.empty();
         }
+
+        // Debounce: only search if 500ms have passed since last search
+        // or if the query has changed significantly
+        final now = DateTime.now();
+        if (_lastSearchTime != null && query == _lastSearchQuery) {
+          final timeSinceLastSearch = now.difference(_lastSearchTime!);
+          if (timeSinceLastSearch.inMilliseconds < 500) {
+            return const Iterable<AddressSuggestion>.empty();
+          }
+        }
+
+        _lastSearchTime = now;
+        _lastSearchQuery = query;
+
+        // Add a small delay to allow for more typing
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        // Check if query has changed during the delay
+        if (query != textEditingValue.text) {
+          return const Iterable<AddressSuggestion>.empty();
+        }
+
         // Search directly without using state - avoids rebuilds
-        return await GeocodingService.searchAddress(textEditingValue.text);
+        return await GeocodingService.searchAddress(query);
       },
       displayStringForOption: (AddressSuggestion option) => option.displayName,
       onSelected: (AddressSuggestion selection) {
