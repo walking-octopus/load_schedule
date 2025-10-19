@@ -692,8 +692,12 @@ class NationalComparisonCard extends StatelessWidget {
     // Calculate user's percentile
     final userPercentile = StatsUtils.normalCdf(userKwh, mean, stdDev);
 
+    // Dynamic chart range: show ±3 standard deviations from mean, but include user's value
+    final minRange = min(userKwh - 50, mean - 3 * stdDev);
+    final maxRange = max(userKwh + 50, mean + 3 * stdDev);
+
     final dataPoints = List.generate(100, (i) {
-      final x = 100.0 + i * 10.0; // from 100 to 1100 kWh
+      final x = minRange + i * (maxRange - minRange) / 99;
       return FlSpot(x, StatsUtils.normalPdf(x, mean, stdDev));
     });
 
@@ -912,8 +916,8 @@ class NationalComparisonCard extends StatelessWidget {
                                 dotData: const FlDotData(show: false),
                               ),
                             ],
-                            minX: 100,
-                            maxX: 1100,
+                            minX: minRange,
+                            maxX: maxRange,
                             minY: 0,
                             maxY: 120,
                           ),
