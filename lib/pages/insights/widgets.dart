@@ -262,6 +262,10 @@ class ConsumptionChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Calculate dynamic maxY based on data
+    final maxKwh = data.isEmpty ? 800.0 : data.map((e) => e.kwh).reduce((a, b) => a > b ? a : b);
+    final dynamicMaxY = (maxKwh * 1.1).ceilToDouble(); // Add 10% padding
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -318,7 +322,7 @@ class ConsumptionChart extends StatelessWidget {
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
-                        horizontalInterval: 200,
+                        horizontalInterval: dynamicMaxY / 4, // 4 grid lines
                         getDrawingHorizontalLine: (value) {
                           return FlLine(
                             color: Theme.of(
@@ -368,7 +372,7 @@ class ConsumptionChart extends StatelessWidget {
                       borderData: FlBorderData(show: false),
                       barGroups: _buildBarGroups(),
                       minY: 0,
-                      maxY: 800,
+                      maxY: dynamicMaxY,
                       barTouchData: BarTouchData(
                         enabled: true,
                         touchTooltipData: BarTouchTooltipData(
