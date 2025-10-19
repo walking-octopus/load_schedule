@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'models.dart';
 import 'bill_models.dart';
+import 'constants.dart';
 import '../services/optimal_t.dart';
 
 class TimeFormatter {
@@ -271,9 +272,8 @@ class BillUtils {
     return monthNamesShort[month.month - 1];
   }
 
-  /// Assumed average electricity price in EUR/kWh for conversions
-  /// Typical Lithuanian residential rate is around 0.15-0.25 EUR/kWh
-  static const double averageElectricityPricePerKwh = 0.20;
+  /// Average electricity price in EUR/kWh - imported from AppConstants
+  static const double averageElectricityPricePerKwh = AppConstants.averageElectricityPricePerKwh;
 
   /// Create default bill breakdown based on total amount
   static Map<String, ApplianceConsumption> createDefaultBillBreakdown(
