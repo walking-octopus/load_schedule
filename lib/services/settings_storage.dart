@@ -159,4 +159,14 @@ class SettingsStorageService {
       throw Exception('Failed to clear settings: $e');
     }
   }
+
+  /// Clear all data (settings and bills)
+  static Future<void> clearAllData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    } catch (e) {
+      throw Exception('Failed to clear all data: $e');
+    }
+  }
 }
