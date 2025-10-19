@@ -240,8 +240,6 @@ class PriceChart extends StatelessWidget {
   ) {
     return LineChartBarData(
       spots: priceData,
-      // isCurved: true,
-      // curveSmoothness: 0.35,
       preventCurveOverShooting: true,
       color: Theme.of(context).colorScheme.primary,
       barWidth: 4,
@@ -333,7 +331,6 @@ class _LoadListItemState extends State<LoadListItem> {
       },
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
-          // Pin action
           widget.onTogglePin();
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -348,13 +345,11 @@ class _LoadListItemState extends State<LoadListItem> {
               ),
             );
           }
-          return false; // Don't dismiss for pin
+          return false;
         }
-        // For delete - allow it but don't show snackbar here
         return true;
       },
       onDismissed: (direction) {
-        // Only called for delete (endToStart)
         widget.onRemove();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -367,6 +362,62 @@ class _LoadListItemState extends State<LoadListItem> {
         }
       },
       child: _buildCard(context),
+    );
+  }
+
+  Widget _buildCard(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            _buildIcon(context),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 4,
+              child: Text(
+                widget.load.appliance,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 6,
+              child: Text(
+                TimeFormatter.formatArrivalTimes(widget.load),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  height: 1.2,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIcon(BuildContext context) {
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: Icon(
+        widget.load.icon,
+        color: Theme.of(context).colorScheme.onSurface,
+        size: 24,
+      ),
     );
   }
 
@@ -401,97 +452,6 @@ class _LoadListItemState extends State<LoadListItem> {
         color: Theme.of(context).colorScheme.onErrorContainer,
         size: 24,
       ),
-    );
-  }
-
-  Widget _buildCard(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            _buildIcon(context),
-            const SizedBox(width: 16),
-            Expanded(child: _buildInfo(context)),
-            const SizedBox(width: 16),
-            Text(
-              TimeFormatter.formatArrivalTimes(widget.load),
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                height: 1.2,
-              ),
-              textAlign: TextAlign.right,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIcon(BuildContext context) {
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: Icon(
-        widget.load.icon,
-        color: Theme.of(context).colorScheme.onSurface,
-        size: 24,
-      ),
-    );
-  }
-
-  Widget _buildInfo(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.load.appliance,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Text(
-              '${(widget.load.loadWatts / 1000).toStringAsFixed(1)} kW',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (widget.load.isPinned) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Container(
-                  width: 3,
-                  height: 3,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.repeat,
-                size: 14,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Recurring',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ],
     );
   }
 }
