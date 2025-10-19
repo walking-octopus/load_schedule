@@ -100,10 +100,12 @@ class ProbabilisticBillModel {
       return UncertainDistributions.point(0.0); // Non-electric heating
     }
 
-    // Base consumption depends on area and insulation
-    final baseKwhPerM2 = settings.heatingType == 'Heat Pump' ? 15.0 : 35.0;
+    // Base annual consumption per m² (kWh/m²/year)
+    // Then divide by 12 for monthly base before weather adjustment
+    final annualKwhPerM2 = settings.heatingType == 'Heat Pump' ? 15.0 : 35.0;
+    final monthlyBasePerM2 = annualKwhPerM2 / 12.0;
     final baseConsumption =
-        settings.area * baseKwhPerM2 * settings.efficiencyFactor;
+        settings.area * monthlyBasePerM2 * settings.efficiencyFactor;
 
     // Weather impact: colder = more heating
     final weatherMultiplier = weatherProfile.heatingDegreeMultiplier;
@@ -142,10 +144,11 @@ class ProbabilisticBillModel {
       return UncertainDistributions.point(0.0);
     }
 
-    // Base consumption depends on area
-    final baseKwhPerM2 = 8.0;
+    // Base annual consumption per m² for cooling, divided by active months (May-Sep = 5 months)
+    final annualKwhPerM2 = 8.0;
+    final monthlyBasePerM2 = annualKwhPerM2 / 5.0; // 5 summer months
     final baseConsumption =
-        settings.area * baseKwhPerM2 * settings.efficiencyFactor;
+        settings.area * monthlyBasePerM2 * settings.efficiencyFactor;
 
     // Weather impact: hotter = more cooling
     final weatherMultiplier = weatherProfile.coolingDegreeMultiplier;
