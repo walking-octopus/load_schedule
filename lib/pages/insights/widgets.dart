@@ -112,15 +112,23 @@ class BillBreakdownCard extends StatelessWidget {
     final sortedBreakdown = bill.breakdown.values.toList()
       ..sort((a, b) => b.amount.compareTo(a.amount));
 
+    // Calculate average watts per appliance (kWh over ~30 days)
+    final daysInMonth = DateTime(bill.month.year, bill.month.month + 1, 0).day;
+
     return Column(
       children: sortedBreakdown.map((consumption) {
+        // Convert kWh to average Watts: kWh * 1000 / (days * 24 hours)
+        final avgWatts = (consumption.kwh * 1000) / (daysInMonth * 24);
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 12,
                 height: 12,
+                margin: const EdgeInsets.only(top: 4),
                 decoration: BoxDecoration(
                   color: consumption.color,
                   shape: BoxShape.circle,
@@ -128,23 +136,38 @@ class BillBreakdownCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  consumption.name,
-                  style: Theme.of(context).textTheme.titleSmall,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      consumption.name,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    Text(
+                      '${avgWatts.toStringAsFixed(0)} W avg',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                '€${consumption.amount.toStringAsFixed(2)}',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '• ${consumption.kwh.toStringAsFixed(0)} kWh',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '€${consumption.amount.toStringAsFixed(2)}',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    '${consumption.kwh.toStringAsFixed(0)} kWh',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -582,7 +605,7 @@ class NationalComparisonCard extends StatelessWidget {
                               verticalLines: [
                                 VerticalLine(
                                   x: userKwh,
-                                  color: Colors.orange,
+                                  color: Colors.deepOrange.shade700,
                                   strokeWidth: 2.5,
                                   dashArray: [6, 4],
                                   label: VerticalLineLabel(
@@ -593,7 +616,7 @@ class NationalComparisonCard extends StatelessWidget {
                                       bottom: 4,
                                     ),
                                     style: TextStyle(
-                                      color: Colors.orange,
+                                      color: Colors.deepOrange.shade700,
                                       fontWeight: FontWeight.w700,
                                       fontSize: 11,
                                       backgroundColor: Theme.of(context)
@@ -673,7 +696,7 @@ class NationalComparisonCard extends StatelessWidget {
                     _buildLegendItem(
                       context,
                       'Your household (${userKwh.toStringAsFixed(0)} kWh)',
-                      Colors.orange,
+                      Colors.deepOrange.shade700,
                     ),
                   ],
                 ),
