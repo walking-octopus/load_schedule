@@ -261,7 +261,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildAddressField() {
-    return Autocomplete<AddressSuggestion>(
+    final TextEditingController addressController = TextEditingController(text: _address);
+
+    return RawAutocomplete<AddressSuggestion>(
+      textEditingController: addressController,
+      focusNode: FocusNode(),
       optionsBuilder: (TextEditingValue textEditingValue) async {
         final query = textEditingValue.text.trim();
 
@@ -269,14 +273,22 @@ class _SettingsPageState extends State<SettingsPage> {
           return const Iterable<AddressSuggestion>.empty();
         }
 
-        // Check cache first
+        // Check cache first - return immediately if cached
         if (_searchCache.containsKey(query)) {
           return _searchCache[query]!;
         }
 
-        // Return empty immediately, actual search happens after debounce
-        // This prevents multiple simultaneous requests
-        return const Iterable<AddressSuggestion>.empty();
+        // Debounced search - cancel previous and start new timer
+        _debounceTimer?.cancel();
+        final completer = Completer<Iterable<AddressSuggestion>>();
+
+        _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
+          final results = await GeocodingService.searchAddress(query);
+          _searchCache[query] = results;
+          completer.complete(results);
+        });
+
+        return completer.future;
       },
       displayStringForOption: (AddressSuggestion option) => option.displayName,
       onSelected: (AddressSuggestion selection) {
@@ -285,62 +297,64 @@ class _SettingsPageState extends State<SettingsPage> {
           _latitude = selection.latitude;
           _longitude = selection.longitude;
         });
+        addressController.text = selection.displayName;
       },
-      initialValue: TextEditingValue(text: _address),
-      fieldViewBuilder:
-          (
-            BuildContext context,
-            TextEditingController controller,
-            FocusNode focusNode,
-            VoidCallback onFieldSubmitted,
-          ) {
-            return TextFormField(
-              controller: controller,
-              focusNode: focusNode,
-              decoration: InputDecoration(
-                labelText: 'Address',
-                border: const OutlineInputBorder(),
-                suffixIcon: _fetchingLocation
-                    ? const Padding(
-                        padding: EdgeInsets.all(12.0),
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : IconButton(
-                        icon: const Icon(Icons.my_location),
-                        onPressed: _fetchGPSLocation,
-                        tooltip: 'Use GPS location',
-                      ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Address is required';
-                }
-                return null;
-              },
-              onChanged: (value) {
-                _address = value;
-
-                // Debounced search
-                _debounceTimer?.cancel();
-                if (value.trim().length >= 3) {
-                  _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
-                    final results = await GeocodingService.searchAddress(value.trim());
-                    if (mounted) {
-                      setState(() {
-                        _searchCache[value.trim()] = results;
-                      });
-                      // Trigger autocomplete to show results
-                      controller.text = value;
-                    }
-                  });
-                }
-              },
-            );
+      fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+        return TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          decoration: InputDecoration(
+            labelText: 'Address',
+            border: const OutlineInputBorder(),
+            suffixIcon: _fetchingLocation
+                ? const Padding(
+                    padding: EdgeInsets.all(12.0),
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.my_location),
+                    onPressed: _fetchGPSLocation,
+                    tooltip: 'Use GPS location',
+                  ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Address is required';
+            }
+            return null;
           },
+          onChanged: (value) {
+            _address = value;
+          },
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4.0,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200, maxWidth: 400),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final option = options.elementAt(index);
+                  return ListTile(
+                    title: Text(option.displayName),
+                    onTap: () => onSelected(option),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
