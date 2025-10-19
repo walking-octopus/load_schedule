@@ -91,7 +91,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-
   void _showResetConfirmDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -261,7 +260,9 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildAddressField() {
-    final TextEditingController addressController = TextEditingController(text: _address);
+    final TextEditingController addressController = TextEditingController(
+      text: _address,
+    );
 
     return RawAutocomplete<AddressSuggestion>(
       textEditingController: addressController,
@@ -513,7 +514,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildApplianceEfficiencyItem(String appliance) {
     final efficiency = _applianceEfficiency[appliance]!;
-    const efficiencyLevels = ['None', 'F', 'E', 'D', 'C', 'B', 'A'];
+    const efficiencyLevels = ['—', 'F', 'E', 'D', 'C', 'B', 'A'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -653,7 +654,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Could not find coordinates for this address. Please select from suggestions.'),
+                      content: Text(
+                        'Could not find coordinates for this address. Please select from suggestions.',
+                      ),
                     ),
                   );
                 }
@@ -666,7 +669,9 @@ class _SettingsPageState extends State<SettingsPage> {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Please select an address from the suggestions'),
+                    content: Text(
+                      'Please select an address from the suggestions',
+                    ),
                   ),
                 );
               }
