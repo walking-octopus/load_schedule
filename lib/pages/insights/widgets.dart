@@ -53,6 +53,23 @@ class BillBreakdownCard extends StatelessWidget {
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
+            const SizedBox(height: 4),
+            Builder(
+              builder: (context) {
+                final totalKwh = bill.breakdown.values.fold<double>(
+                  0,
+                  (sum, item) => sum + item.kwh,
+                );
+                final daysInMonth = DateTime(bill.month.year, bill.month.month + 1, 0).day;
+                final avgWatts = (totalKwh * 1000) / (daysInMonth * 24);
+                return Text(
+                  '${totalKwh.toStringAsFixed(0)} kWh • ${avgWatts.toStringAsFixed(0)} W avg',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 16),
             LayoutBuilder(
               builder: (context, constraints) {
