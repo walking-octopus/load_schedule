@@ -78,9 +78,15 @@ class _SettingsPageState extends State<SettingsPage> {
           settings.longitude,
         );
         if (address != null && mounted) {
-          setState(() {
-            _address = address;
-            _addressController.text = address;
+          // Update address state first
+          _address = address;
+          // Defer controller update to avoid setState during build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _addressController.text = address;
+              });
+            }
           });
         }
       }
@@ -342,9 +348,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 return null;
               },
               onChanged: (value) {
-                setState(() => _address = value);
+                _address = value;
                 _addressController.text = value;
-                _onAddressChanged(value);
+                // Defer state updates to avoid setState during build
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    _onAddressChanged(value);
+                  }
+                });
               },
             );
           },
