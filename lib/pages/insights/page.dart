@@ -26,14 +26,7 @@ class _InsightsPageState extends State {
 
     try {
       await BillService.loadBills();
-
-      // Use mock bill if no real data exists
-      if (BillService.getAllBills().isEmpty) {
-        final mockBill = BillService.getMockBill();
-        if (mockBill != null) {
-          await BillService.saveBill(mockBill);
-        }
-      }
+      // TODO: Generate predicted bills using uncertainty model if no data exists
     } catch (e) {
       debugPrint('Error loading bills: $e');
     } finally {

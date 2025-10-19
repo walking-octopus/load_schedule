@@ -56,57 +56,27 @@ class BillService {
     await StorageService.saveBills(_bills);
   }
 
-  /// Get mock bill for demonstration (fallback)
-  static Bill? getMockBill() {
-    final now = DateTime.now();
-    final lastMonth = DateTime(now.year, now.month - 1);
-
-    return Bill(
-      id: 'bill_${lastMonth.millisecondsSinceEpoch}',
-      month: lastMonth,
-      totalAmount: 142.50,
-      breakdown: BillUtils.createDefaultBillBreakdown(142.50),
-    );
-  }
-
   static List<MonthlyConsumption> getMonthlyConsumption() {
-    final now = DateTime.now();
     final data = <MonthlyConsumption>[];
 
-    // Generate 9 past months + current month (10 total)
-    for (int i = 9; i >= 0; i--) {
-      final month = DateTime(now.year, now.month - i);
-
-      if (i <= 2) {
-        // Last 3 months are actual data
-        data.add(
-          MonthlyConsumption(
-            month: month,
-            kwh: 620 + (i % 2 == 0 ? 40 : -25) + (i * 5),
-          ),
-        );
-      } else {
-        // Older months with some variation
-        data.add(
-          MonthlyConsumption(month: month, kwh: 650 + ((i % 3) * 30) - 20),
-        );
-      }
-    }
-
-    // Add 2 future months as predicted (total = 12 months)
-    final lastActual = data.last.kwh;
-    for (int i = 1; i <= 2; i++) {
-      final month = DateTime(now.year, now.month + i);
-      // Predict slightly lower consumption (assuming optimization)
+    // Return actual bills data
+    for (final bill in _bills) {
+      final totalKwh = bill.breakdown.values.fold<double>(
+        0,
+        (sum, item) => sum + item.kwh,
+      );
       data.add(
         MonthlyConsumption(
-          month: month,
-          kwh: lastActual - (i * 20),
-          isPredicted: true,
+          month: bill.month,
+          kwh: totalKwh,
         ),
       );
     }
 
+    // TODO: Add predicted future months using uncertainty model
+
+    // Sort by month
+    data.sort((a, b) => a.month.compareTo(b.month));
     return data;
   }
 }
