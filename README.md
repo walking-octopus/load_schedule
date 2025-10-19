@@ -1,22 +1,20 @@
 # PowerTime ⚡
 
-Schedule heavy loads for optimal dynamic tariff.
-
-A Flutter app that helps you schedule high-power appliances (washing machines, EVs, water heaters, etc.) to run during off-peak electricity pricing periods, saving you money on your energy bills.
+Schedule heavy loads for optimal dynamic tariff, desegregate your bills into probable load categories, get tips to reduce your consumption, log past bills and predict future ones.
 
 **[🌐 Live Demo](https://walking-octopus.github.io/load_schedule/)** • **[📱 Download APK](https://github.com/walking-octopus/load_schedule/actions)** (Actions → Latest run → Artifacts)
 
 ## Features
 
 - 📊 Live energy price forecast visualization
-- 🔌 12+ preset appliances (or add custom loads)
-- ⏰ Smart scheduling with optimal time windows
+- ⏰ Smart scheduling with optimal time windows for recurring and deferred loads
 - 💰 Savings estimates for each scheduled load
-- 🔁 Recurring load scheduling
-- 🎯 Beautiful Material Design 3 UI
 - 🔧 An accurate control-theory model of tariff prices
-
-> **Note:** Built as a hackathon project featuring a sophisticated control theory-based tariff pricing model with multiple harmonics for realistic daily patterns, underdamped step response for demand peaks, Ornstein-Uhlenbeck process for stochastic price variations, and 15-minute tariff intervals aligned to real-world pricing.
+- ❓ A sound probabalistic-programming model of household power consumption
+- 👥 National consumption percentile for your household
+- 👌 Personalized appliance upgrade recomendations to reduce your bill
+- 🎯 Beautiful Material Design 3 UI
+- 📱 Avalible on Android, ~~iOS~~, and web
 
 ## Quick Start
 
@@ -38,4 +36,4 @@ flutter build macos      # macOS
 
 ## TODO
 
-Next steps: Integrate real Nord Pool API data (currently using mock control theory model)
+Next steps: Integrate real Nord Pool API data (currently using theoretical control theory model)
