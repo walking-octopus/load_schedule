@@ -310,6 +310,8 @@ class StorageService {
           // Don't serialize color - derive it from appliance name on load
         }),
       ),
+      if (bill.taxes != null) 'taxes': bill.taxes,
+      if (bill.fees != null) 'fees': bill.fees,
     };
   }
 
@@ -333,6 +335,8 @@ class StorageService {
             ),
           );
         }),
+        taxes: json['taxes'] as double?,
+        fees: json['fees'] as double?,
       );
     } catch (e) {
       debugPrint('Error parsing bill from JSON: $e');

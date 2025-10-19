@@ -115,65 +115,125 @@ class BillBreakdownCard extends StatelessWidget {
     // Calculate average watts per appliance (kWh over ~30 days)
     final daysInMonth = DateTime(bill.month.year, bill.month.month + 1, 0).day;
 
-    return Column(
-      children: sortedBreakdown.map((consumption) {
-        // Convert kWh to average Watts: kWh * 1000 / (days * 24 hours)
-        final avgWatts = (consumption.kwh * 1000) / (daysInMonth * 24);
+    final items = <Widget>[];
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                margin: const EdgeInsets.only(top: 4),
-                decoration: BoxDecoration(
-                  color: consumption.color,
-                  shape: BoxShape.circle,
-                ),
+    // Add appliance consumption items
+    for (final consumption in sortedBreakdown) {
+      // Convert kWh to average Watts: kWh * 1000 / (days * 24 hours)
+      final avgWatts = (consumption.kwh * 1000) / (daysInMonth * 24);
+
+      items.add(Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              margin: const EdgeInsets.only(top: 4),
+              decoration: BoxDecoration(
+                color: consumption.color,
+                shape: BoxShape.circle,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      consumption.name,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    Text(
-                      '${avgWatts.toStringAsFixed(0)} W avg',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '€${consumption.amount.toStringAsFixed(2)}',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                    consumption.name,
+                    style: Theme.of(context).textTheme.titleSmall,
                   ),
                   Text(
-                    '${consumption.kwh.toStringAsFixed(0)} kWh',
+                    '${avgWatts.toStringAsFixed(0)} W avg',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '€${consumption.amount.toStringAsFixed(2)}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  '${consumption.kwh.toStringAsFixed(0)} kWh',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ));
+    }
+
+    // Add divider before taxes and fees if they exist
+    if ((bill.taxes != null && bill.taxes! > 0) ||
+        (bill.fees != null && bill.fees! > 0)) {
+      items.add(const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Divider(),
+      ));
+    }
+
+    // Add distribution/network fees if present
+    if (bill.fees != null && bill.fees! > 0) {
+      items.add(Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            const SizedBox(width: 20),
+            Expanded(
+              child: Text(
+                'Distribution fees',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            Text(
+              '€${bill.fees!.toStringAsFixed(2)}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ));
+    }
+
+    // Add taxes if present
+    if (bill.taxes != null && bill.taxes! > 0) {
+      items.add(Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            const SizedBox(width: 20),
+            Expanded(
+              child: Text(
+                'VAT (21%)',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            Text(
+              '€${bill.taxes!.toStringAsFixed(2)}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ));
+    }
+
+    return Column(children: items);
   }
 }
 
