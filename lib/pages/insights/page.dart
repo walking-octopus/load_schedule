@@ -73,16 +73,26 @@ class _InsightsPageState extends State {
       return _buildPredictedOrEmptyState();
     }
 
-    final consumptionData = BillService.getMonthlyConsumption();
+    return FutureBuilder<List<MonthlyConsumption>>(
+      future: BillService.getMonthlyConsumption(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-      children: [
-        BillBreakdownCard(bill: bill),
-        ConsumptionChart(data: consumptionData),
-        EfficiencyRecommendationsCard(bill: bill),
-        NationalComparisonCard(bill: bill),
-      ],
+        final consumptionData = snapshot.data ?? [];
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+          children: [
+            BillBreakdownCard(bill: bill),
+            if (consumptionData.isNotEmpty)
+              ConsumptionChart(data: consumptionData),
+            EfficiencyRecommendationsCard(bill: bill),
+            NationalComparisonCard(bill: bill),
+          ],
+        );
+      },
     );
   }
 
@@ -100,17 +110,28 @@ class _InsightsPageState extends State {
         }
 
         // Show predicted bill with a banner indicating it's a prediction
-        final consumptionData = BillService.getMonthlyConsumption();
+        return FutureBuilder<List<MonthlyConsumption>>(
+          future: BillService.getMonthlyConsumption(),
+          builder: (context, consumptionSnapshot) {
+            if (consumptionSnapshot.connectionState ==
+                ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-          children: [
-            _buildPredictionBanner(),
-            BillBreakdownCard(bill: predictedBill),
-            if (consumptionData.isNotEmpty) ConsumptionChart(data: consumptionData),
-            EfficiencyRecommendationsCard(bill: predictedBill),
-            NationalComparisonCard(bill: predictedBill),
-          ],
+            final consumptionData = consumptionSnapshot.data ?? [];
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+              children: [
+                _buildPredictionBanner(),
+                BillBreakdownCard(bill: predictedBill),
+                if (consumptionData.isNotEmpty)
+                  ConsumptionChart(data: consumptionData),
+                EfficiencyRecommendationsCard(bill: predictedBill),
+                NationalComparisonCard(bill: predictedBill),
+              ],
+            );
+          },
         );
       },
     );
@@ -171,7 +192,9 @@ class _InsightsPageState extends State {
             Icon(
               Icons.insert_chart_outlined,
               size: 120,
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 24),
             Text(
@@ -196,7 +219,10 @@ class _InsightsPageState extends State {
               icon: const Icon(Icons.add),
               label: const Text('Add Your First Bill'),
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -214,7 +240,10 @@ class _InsightsPageState extends State {
               icon: const Icon(Icons.settings),
               label: const Text('Configure Household'),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -250,7 +279,6 @@ class _InsightsPageState extends State {
       ),
     );
   }
-
 
   void _showAddBillDialog() {
     final formKey = GlobalKey<FormState>();
@@ -425,5 +453,4 @@ class _InsightsPageState extends State {
       ),
     );
   }
-
 }

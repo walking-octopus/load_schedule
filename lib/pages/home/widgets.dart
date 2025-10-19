@@ -51,7 +51,7 @@ class PriceChartCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const SizedBox(height: 240, child: PriceChart()),
+            const SizedBox(height: 200, child: PriceChart()),
           ],
         ),
       ),
@@ -185,10 +185,9 @@ class PriceChart extends StatelessWidget {
         getTooltipColor: (touchedSpot) =>
             Theme.of(context).colorScheme.inverseSurface,
         tooltipBorder: BorderSide(
-          color: Theme.of(context)
-              .colorScheme
-              .outlineVariant
-              .withValues(alpha: 0.5),
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
           width: 1,
         ),
         tooltipBorderRadius: BorderRadius.circular(8),
@@ -197,7 +196,8 @@ class PriceChart extends StatelessWidget {
           final hour = spot.x.floor();
           final minuteFraction = spot.x - hour;
           final minute = (minuteFraction * 60).round();
-          final timeStr = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+          final timeStr =
+              '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
           return LineTooltipItem(
             '${spot.y.toStringAsFixed(1)} ¢/kWh\n$timeStr',
             TextStyle(

@@ -98,7 +98,7 @@ class BillService {
     await StorageService.saveBills(_bills);
   }
 
-  static List<MonthlyConsumption> getMonthlyConsumption() {
+  static Future<List<MonthlyConsumption>> getMonthlyConsumption() async {
     final data = <MonthlyConsumption>[];
 
     // Return actual bills data
@@ -111,8 +111,48 @@ class BillService {
         MonthlyConsumption(
           month: bill.month,
           kwh: totalKwh,
+          isPredicted: false,
         ),
       );
+    }
+
+    // Add predicted future months if settings are configured
+    final settings = await StorageService.loadSettings();
+    if (settings != null) {
+      final now = DateTime.now();
+      final currentMonth = DateTime(now.year, now.month);
+
+      // Generate predictions for next 12 months
+      for (var i = 0; i < 12; i++) {
+        final futureMonth = DateTime(currentMonth.year, currentMonth.month + i);
+
+        // Skip if we already have actual data for this month
+        if (_bills.any(
+          (b) =>
+              b.month.year == futureMonth.year &&
+              b.month.month == futureMonth.month,
+        )) {
+          continue;
+        }
+
+        // Generate prediction
+        final weatherProfile = WeatherProfile.typical(futureMonth);
+        final model = ProbabilisticBillModel(
+          settings: settings,
+          month: futureMonth,
+          weatherProfile: weatherProfile,
+        );
+
+        final probabilisticBill = model.generateBill(sampleCount: 1000);
+
+        data.add(
+          MonthlyConsumption(
+            month: futureMonth,
+            kwh: probabilisticBill.totalKwh,
+            isPredicted: true,
+          ),
+        );
+      }
     }
 
     // Sort by month
