@@ -14,7 +14,6 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   final _formKey = GlobalKey<FormState>();
-  final _addressController = TextEditingController();
   bool _fetchingLocation = false;
   Timer? _debounce;
   List<AddressSuggestion> _addressSuggestions = [];
@@ -51,43 +50,37 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
-    _addressController.text = _address;
     _loadSettings();
   }
 
   Future<void> _loadSettings() async {
     final settings = await StorageService.loadSettings();
     if (settings != null && mounted) {
-      setState(() {
-        _latitude = settings.latitude;
-        _longitude = settings.longitude;
-        _area = settings.area;
-        _occupants = settings.occupants;
-        _buildingType = settings.buildingType;
-        _constructionYear = settings.constructionYear;
-        _heatingType = settings.heatingType;
-        _hasEV = settings.evBatteryCapacity > 0;
-        _dailyKm = settings.evDailyKm;
-        _batteryCapacity = settings.evBatteryCapacity;
-      });
-
       // Reverse geocode coordinates to get address for display
+      String? address;
       if (settings.latitude != 0.0 && settings.longitude != 0.0) {
-        final address = await GeocodingService.reverseGeocode(
+        address = await GeocodingService.reverseGeocode(
           settings.latitude,
           settings.longitude,
         );
-        if (address != null && mounted) {
-          // Defer both state and controller updates to avoid setState during build
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                _address = address;
-              });
-              _addressController.text = address;
-            }
-          });
-        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _latitude = settings.latitude;
+          _longitude = settings.longitude;
+          _area = settings.area;
+          _occupants = settings.occupants;
+          _buildingType = settings.buildingType;
+          _constructionYear = settings.constructionYear;
+          _heatingType = settings.heatingType;
+          _hasEV = settings.evBatteryCapacity > 0;
+          _dailyKm = settings.evDailyKm;
+          _batteryCapacity = settings.evBatteryCapacity;
+          if (address != null) {
+            _address = address;
+          }
+        });
       }
     }
   }
@@ -95,7 +88,6 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void dispose() {
     _debounce?.cancel();
-    _addressController.dispose();
     super.dispose();
   }
 
@@ -204,7 +196,6 @@ class _SettingsPageState extends State<SettingsPage> {
           _address = address;
           _latitude = position.latitude;
           _longitude = position.longitude;
-          _addressController.text = address;
         });
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -304,9 +295,9 @@ class _SettingsPageState extends State<SettingsPage> {
           _address = selection.displayName;
           _latitude = selection.latitude;
           _longitude = selection.longitude;
-          _addressController.text = selection.displayName;
         });
       },
+      initialValue: TextEditingValue(text: _address),
       fieldViewBuilder:
           (
             BuildContext context,
@@ -314,11 +305,6 @@ class _SettingsPageState extends State<SettingsPage> {
             FocusNode focusNode,
             VoidCallback onFieldSubmitted,
           ) {
-            // Sync our controller with the autocomplete controller
-            if (controller.text != _addressController.text) {
-              controller.text = _addressController.text;
-            }
-
             return TextFormField(
               controller: controller,
               focusNode: focusNode,
@@ -348,7 +334,6 @@ class _SettingsPageState extends State<SettingsPage> {
               },
               onChanged: (value) {
                 _address = value;
-                _addressController.text = value;
                 // Defer state updates to avoid setState during build
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
