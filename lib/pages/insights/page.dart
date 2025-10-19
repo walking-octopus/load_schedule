@@ -198,7 +198,10 @@ class _InsightsPageState extends State {
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: () {
-                Navigator.pushNamed(context, '/settings');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                );
               },
               icon: const Icon(Icons.settings),
               label: const Text('Configure Household'),
