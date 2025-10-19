@@ -52,6 +52,39 @@ class _SettingsPageState extends State<SettingsPage> {
   void initState() {
     super.initState();
     _addressController.text = _address;
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await StorageService.loadSettings();
+    if (settings != null && mounted) {
+      setState(() {
+        _latitude = settings.latitude;
+        _longitude = settings.longitude;
+        _area = settings.area;
+        _occupants = settings.occupants;
+        _buildingType = settings.buildingType;
+        _constructionYear = settings.constructionYear;
+        _heatingType = settings.heatingType;
+        _hasEV = settings.evBatteryCapacity > 0;
+        _dailyKm = settings.evDailyKm;
+        _batteryCapacity = settings.evBatteryCapacity;
+      });
+
+      // Reverse geocode coordinates to get address for display
+      if (settings.latitude != 0.0 && settings.longitude != 0.0) {
+        final address = await GeocodingService.reverseGeocode(
+          settings.latitude,
+          settings.longitude,
+        );
+        if (address != null && mounted) {
+          setState(() {
+            _address = address;
+            _addressController.text = address;
+          });
+        }
+      }
+    }
   }
 
   @override
