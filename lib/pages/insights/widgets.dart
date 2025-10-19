@@ -468,6 +468,196 @@ class ConsumptionChart extends StatelessWidget {
   }
 }
 
+/// Widget for displaying efficiency recommendations
+class EfficiencyRecommendationsCard extends StatelessWidget {
+  final Bill bill;
+
+  const EfficiencyRecommendationsCard({super.key, required this.bill});
+
+  @override
+  Widget build(BuildContext context) {
+    final recommendation = _getBestRecommendation();
+
+    // Hide card if savings are below threshold
+    if (recommendation == null || recommendation.threeMonthSavings < 15.0) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.tips_and_updates,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Efficiency Tip',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              recommendation.title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              recommendation.description,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '3-month savings',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      '€${recommendation.threeMonthSavings.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Colors.green,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Est. upgrade cost',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      '€${recommendation.upgradeCost.toStringAsFixed(0)}',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: (recommendation.threeMonthSavings / recommendation.upgradeCost).clamp(0.0, 1.0),
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              color: Colors.green,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Payback in ~${(recommendation.upgradeCost / (recommendation.threeMonthSavings / 3)).ceil()} months',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  _EfficiencyRecommendation? _getBestRecommendation() {
+    final recommendations = <_EfficiencyRecommendation>[];
+
+    // Check heating efficiency
+    final heatingConsumption = bill.breakdown['Heating'];
+    if (heatingConsumption != null && heatingConsumption.kwh > 200) {
+      final monthlySavings = heatingConsumption.amount * 0.35; // 35% improvement
+      recommendations.add(_EfficiencyRecommendation(
+        title: 'Upgrade to Heat Pump',
+        description: 'Your heating costs are high. A heat pump could reduce consumption by up to 35%.',
+        threeMonthSavings: monthlySavings * 3,
+        upgradeCost: 3500,
+        applianceName: 'Heating',
+      ));
+    }
+
+    // Check water heater efficiency
+    final waterHeaterConsumption = bill.breakdown['Water Heater'];
+    if (waterHeaterConsumption != null && waterHeaterConsumption.kwh > 100) {
+      final monthlySavings = waterHeaterConsumption.amount * 0.25; // 25% improvement
+      recommendations.add(_EfficiencyRecommendation(
+        title: 'Install Solar Water Heater',
+        description: 'A solar water heater could reduce water heating costs by 25%.',
+        threeMonthSavings: monthlySavings * 3,
+        upgradeCost: 1200,
+        applianceName: 'Water Heater',
+      ));
+    }
+
+    // Check refrigerator efficiency
+    final refrigeratorConsumption = bill.breakdown['Refrigerator'];
+    if (refrigeratorConsumption != null && refrigeratorConsumption.kwh > 60) {
+      final monthlySavings = refrigeratorConsumption.amount * 0.40; // 40% improvement
+      recommendations.add(_EfficiencyRecommendation(
+        title: 'Upgrade to A+++ Refrigerator',
+        description: 'Your refrigerator is consuming a lot. A modern A+++ model could save 40%.',
+        threeMonthSavings: monthlySavings * 3,
+        upgradeCost: 600,
+        applianceName: 'Refrigerator',
+      ));
+    }
+
+    // Return best recommendation based on ROI (savings / cost)
+    if (recommendations.isEmpty) return null;
+    recommendations.sort((a, b) {
+      final roiA = a.threeMonthSavings / a.upgradeCost;
+      final roiB = b.threeMonthSavings / b.upgradeCost;
+      return roiB.compareTo(roiA);
+    });
+
+    return recommendations.first;
+  }
+}
+
+class _EfficiencyRecommendation {
+  final String title;
+  final String description;
+  final double threeMonthSavings;
+  final double upgradeCost;
+  final String applianceName;
+
+  _EfficiencyRecommendation({
+    required this.title,
+    required this.description,
+    required this.threeMonthSavings,
+    required this.upgradeCost,
+    required this.applianceName,
+  });
+}
+
 /// Widget for displaying national consumption comparison
 class NationalComparisonCard extends StatelessWidget {
   final Bill bill;

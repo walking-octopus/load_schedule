@@ -85,6 +85,7 @@ class _InsightsPageState extends State {
       children: [
         BillBreakdownCard(bill: bill),
         ConsumptionChart(data: consumptionData),
+        EfficiencyRecommendationsCard(bill: bill),
         NationalComparisonCard(bill: bill),
       ],
     );
