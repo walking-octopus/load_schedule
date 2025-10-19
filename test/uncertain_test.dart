@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:powertime/uncertain.dart';
-import 'dart:math' as math;
 
 void main() {
   group('Uncertain - Basic Construction', () {
@@ -33,13 +32,10 @@ void main() {
       expect(samples.every((x) => probs.containsKey(x)), isTrue);
 
       // Check rough distribution (A should be most common)
-      final histogram = samples.fold<Map<String, int>>(
-        {},
-        (acc, x) {
-          acc[x] = (acc[x] ?? 0) + 1;
-          return acc;
-        },
-      );
+      final histogram = samples.fold<Map<String, int>>({}, (acc, x) {
+        acc[x] = (acc[x] ?? 0) + 1;
+        return acc;
+      });
       expect(histogram['A']!, greaterThan(histogram['B']!));
       expect(histogram['B']!, greaterThan(histogram['C']!));
     });
@@ -267,10 +263,7 @@ void main() {
     });
 
     test('entropy is positive for non-deterministic distributions', () {
-      final u = UncertainDistributions.categorical({
-        'A': 0.5,
-        'B': 0.5,
-      })!;
+      final u = UncertainDistributions.categorical({'A': 0.5, 'B': 0.5})!;
       final ent = u.entropy(sampleCount: 1000);
       expect(ent, greaterThan(0));
       expect(ent, closeTo(1.0, 0.2)); // Should be close to 1 bit for 50/50
@@ -453,8 +446,14 @@ void main() {
 
     test('combining independent measurements', () {
       // Two independent sensor readings
-      final sensor1 = UncertainDouble.normal(mean: 10.0, standardDeviation: 1.0);
-      final sensor2 = UncertainDouble.normal(mean: 10.5, standardDeviation: 1.0);
+      final sensor1 = UncertainDouble.normal(
+        mean: 10.0,
+        standardDeviation: 1.0,
+      );
+      final sensor2 = UncertainDouble.normal(
+        mean: 10.5,
+        standardDeviation: 1.0,
+      );
 
       // Average of sensors
       final average = (sensor1 + sensor2) / 2.0;
@@ -465,8 +464,14 @@ void main() {
 
     test('risk analysis with distributions', () {
       // Cost estimate with uncertainty
-      final laborCost = UncertainDouble.normal(mean: 1000.0, standardDeviation: 200.0);
-      final materialCost = UncertainDouble.normal(mean: 500.0, standardDeviation: 100.0);
+      final laborCost = UncertainDouble.normal(
+        mean: 1000.0,
+        standardDeviation: 200.0,
+      );
+      final materialCost = UncertainDouble.normal(
+        mean: 500.0,
+        standardDeviation: 100.0,
+      );
 
       final totalCost = laborCost + materialCost;
 

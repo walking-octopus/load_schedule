@@ -1,94 +1,50 @@
-- Add BottomBar {
-    NavItem {icon: calendar, "Schedule", page: homePage }
-    NavItem { icon: eye, "Insights", page: insightsPage }
-}
+fix(model): The argument type 'num' can't be assigned to the parameter type 'double'. Ln 69.
 
-- Add Page {
-    id: insights
+fix(forms): enforce required fields in Household Settings
+Mark all relevant Household Settings fields as required to prevent incomplete configuration submissions.
 
-    AppBar {
-        label: "Insights"
-        NavItem { icon: gear, page: settingsPage }
-    }
+fix(forms): mark number-only fields
+Update text fields that take numeric inputs to trigger the number pad on mobile and prevent letter input on desktop.
 
-    Placeholder {
-        icon: house
-        title: "No settings found"
-        subtitle: "Press the gear button to configure your household
-    }
+fix(ui): autofocus month in Add Bill dialog
+Automatically focus the Month field when opening the “Add a new bill” dialog to streamline data entry.
 
-    Label { role: header-large, "Bill Breakdown"  }
+fix(ui): prevent FAB overlap on Insights & Schedule pages
+Add vertical spacing or layout adjustments so the floating “Add Bill” button no longer overlaps the legend on Insights and Schedule pages.
 
-    Horizontal {
-        Vertical {
-            Label { role: subheader, "${lastBill.total} EUR (as char)" }
-            StackChart { data: applianceFraction }
-        }
-        ComponentItem {
-            // each label aligned with load stack's fraciton
+feat(breakdown): include taxes and fees in breakdown
+Update the bill breakdown model and UI to include taxes and fees as explicit items in the total cost composition.
 
-            Label {role: subheader, label: "Heating" }
-            Label {role: subheader, label: "450 EURO \dot 3 kWh" }
-            ...
-        }
-    }
+feat(insights): add efficiency recommendations card
+Add a new card that recommends which single appliance upgrade would yield the best efficiency improvement relative to cost.
+Hide the card if projected 3-month savings are below a fixed reasonable threshold derived from Lithuanian household budget assumptions.
 
-    Label { role: header-large, "Consumption"  }
-        Graph {
-            Src {
-                src: monthly-consumption
-                style: normal
-            }
-            Src {
-                src: predicted
-                style: dotted
-            }
+feat(insights): integrate real uncertainty model into insights and bill service
+Replace the mock bill prediction logic in bill_service.dart and pages/insights/{page,widgets}.dart with real predictions from models/probabalistic_bill_model.dart.
+Use the 80% interval mean for initial outputs, drawing household configuration data from pages/settings/page.dart and real user bills. Use the probabalistic_bill_example.dart for reference. 
 
-            Legend { ... }
-        }
+feat(charts): visualize uncertainty ranges
+Add error bars or shaded intervals to energy and cost charts to represent uncertainty intervals. This should reflect both predicted and observed ranges from the Uncertain model.
 
-    FloatingButton {
-        icon: add
-        label: "Add bill"
+feat(settings): add reset storage button
+Add a small reset (wipe all storage) button to the Household Settings header, represented with a trash icon.
+This should perform a full local data wipe for debugging purposes.
 
-        opens: Dialog {
-            title: Add a new bill
+feat(ui): show watts in bill breakdown
+In the Bill Breakdown card, display the watt consumption values as a subheader below the Euro cost for each appliance.
 
-            DateSelector { overtext: "Bill Month/Year" }
-            Input { type: num, overtext: "Bill paid" }
-        }
-    }
-}
+refactor(model): decouple watts from euros
+Stop using Euros as a proxy for energy consumption (Watts).
+Ensure both are properly tracked and used in modeling and reporting throughout the app.
 
-- Add a Page for household settings, it should be a well-presented progressively disclosed vertical form organized like this:
+refactor(constants): clarify average rate constant
+Define the average energy rate in constants.dart for consistency across billing calculations.
 
-<- Household Settings
+refactor(storage): consolidate settings storage
+Move settings_storage.dart into storage.dart within the services layer, simplifying storage logic and import paths.
 
-Section Header: "Your Home"
+refactor(ui): remove redundant chart and schedule logic
+We were trying to fix some state bugs in scheduled items and stying issues on the power forecast chart, but a lot of these ended up being a cargo-cults when the real culprits were found. Try to simplify out some of this needless redundency
 
-TextInput: "Address" with LocateButton
-NumInput: "Area (m^2)"
-SpinBox{ overtext: "Occupants", min: 1 }
-ChipSelector { overtext: "Building type", ["Appartment" "Detached"] }
-NumInput { overtext: Construction Year }
-
-Section Header: "Appliance efficiency"
-
-ListModal {
-    Vertical { Overtext "Microwave" } ChipSelector {["Poor", "Medium", "Good", "Excellent"] }
-    ...
-} for []
-
-Section Header: "Electric vehicles"
-
-{ overtext: "Do you have an electric vehicle?",
-  ChipSelect: ["Yes", "No" }
-
-If EV {
-    NumInput{ overtext: "Daily km" }
-    NumInput{ "Battery Capacity" }
-}
-
-- Add a service for weather (temperature and daylight hours (lights))
-
-- Use basic uncertainty propagation to calculate expected bills and breakdowns based on that data
+style(ui): improve percentile bar contrast
+Change the percentile bar in the national consumption comparison card to a darker orange tone for better visibility on light backgrounds.

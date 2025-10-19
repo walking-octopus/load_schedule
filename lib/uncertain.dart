@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:collection';
 
 /// A type that represents uncertain data as a probability distribution
 /// using sampling-based computation with conditional semantics.
@@ -48,20 +47,18 @@ class Uncertain<T> extends Iterable<T> {
   ///
   /// - Parameter sampler: A function that returns random samples from the distribution.
   Uncertain(this.sample)
-      : _node = LeafNode<T>(
-          id: _generateId(),
-          sample: sample,
-        );
+    : _node = LeafNode<T>(id: _generateId(), sample: sample);
 
   /// Internal constructor with computation node for building computation graphs
   Uncertain._withNode(this._node)
-      : sample = (() {
-          T _sampler() {
-            final context = SampleContext();
-            return _node.evaluate(context);
-          }
-          return _sampler;
-        })();
+    : sample = (() {
+        T _sampler() {
+          final context = SampleContext();
+          return _node.evaluate(context);
+        }
+
+        return _sampler;
+      })();
 
   static int _idCounter = 0;
   static int _generateId() => _idCounter++;
@@ -70,6 +67,7 @@ class Uncertain<T> extends Iterable<T> {
   ///
   /// - Parameter transform: A function to apply to each sampled value.
   /// - Returns: A new uncertain value with the transformed distribution.
+  @override
   Uncertain<U> map<U>(U Function(T) transform) {
     return Uncertain<U>(() => transform(sample()));
   }
@@ -471,7 +469,10 @@ extension UncertainBoolean on Uncertain<bool> {
     double beta = 0.05,
     int maxSamples = 10000,
   }) {
-    assert(exceeds >= 0.0 && exceeds <= 1.0, 'Threshold must be between 0 and 1');
+    assert(
+      exceeds >= 0.0 && exceeds <= 1.0,
+      'Threshold must be between 0 and 1',
+    );
     assert(alpha > 0.0 && alpha < 1.0, 'Alpha must be between 0 and 1');
     assert(beta > 0.0 && beta < 1.0, 'Beta must be between 0 and 1');
 
@@ -538,8 +539,7 @@ extension UncertainDistributions on Uncertain {
       return components[0];
     }
 
-    final w = weights ??
-        List<double>.filled(components.length, 1.0);
+    final w = weights ?? List<double>.filled(components.length, 1.0);
 
     assert(
       components.length == w.length,
@@ -614,7 +614,10 @@ extension UncertainInt on Uncertain<int> {
   ///   - trials: The number of trials.
   ///   - probability: The probability of success on each trial.
   /// - Returns: A new uncertain value with a binomial distribution.
-  static Uncertain<int> binomial({required int trials, required double probability}) {
+  static Uncertain<int> binomial({
+    required int trials,
+    required double probability,
+  }) {
     final random = math.Random();
     return Uncertain<int>(() {
       var count = 0;
@@ -704,7 +707,10 @@ extension UncertainDouble on Uncertain<double> {
   ///   - b: The second shape parameter (must be > 0).
   /// - Returns: A new uncertain value with a Kumaraswamy distribution in range [0, 1].
   static Uncertain<double> kumaraswamy({required double a, required double b}) {
-    assert(a > 0 && b > 0, 'Kumaraswamy distribution parameters must be positive');
+    assert(
+      a > 0 && b > 0,
+      'Kumaraswamy distribution parameters must be positive',
+    );
 
     final reciprocalA = 1.0 / a;
     final reciprocalB = 1.0 / b;
@@ -712,7 +718,9 @@ extension UncertainDouble on Uncertain<double> {
 
     return Uncertain<double>(() {
       final u = random.nextDouble();
-      return math.pow(1.0 - math.pow(1.0 - u, reciprocalB), reciprocalA).toDouble();
+      return math
+          .pow(1.0 - math.pow(1.0 - u, reciprocalB), reciprocalA)
+          .toDouble();
     });
   }
 
@@ -752,7 +760,8 @@ extension UncertainDouble on Uncertain<double> {
           (bandwidth * math.sqrt(2 * math.pi));
     }
 
-    final density = samples.map((xi) => kernel(value, xi)).reduce((a, b) => a + b) /
+    final density =
+        samples.map((xi) => kernel(value, xi)).reduce((a, b) => a + b) /
         sampleCount;
     return math.log(density);
   }
@@ -814,12 +823,12 @@ extension UncertainHashableStats<T> on Uncertain<T> {
     final total = samples.length.toDouble();
     var entropy = 0.0;
 
-    counts.values.forEach((count) {
+    for (var count in counts.values) {
       final p = count / total;
       if (p > 0) {
         entropy -= p * (math.log(p) / math.ln2);
       }
-    });
+    }
 
     return entropy;
   }
@@ -914,10 +923,7 @@ extension UncertainComparableNumericStats<T extends Comparable<T>>
     final safeUpperIndex = upperIndex.clamp(0, samples.length - 1);
     final safeLowerIndex = lowerIndex.clamp(0, samples.length - 1);
 
-    return (
-      lower: samples[safeLowerIndex],
-      upper: samples[safeUpperIndex],
-    );
+    return (lower: samples[safeLowerIndex], upper: samples[safeUpperIndex]);
   }
 
   /// Estimates the cumulative distribution function (CDF) at a given value.
@@ -944,7 +950,10 @@ extension UncertainComparableNumericStats<T extends Comparable<T>>
   ///   - sampleCount: The number of samples to use for estimation.
   /// - Returns: The estimated quantile value.
   T quantile({required double quantile, int sampleCount = 1000}) {
-    assert(quantile >= 0.0 && quantile <= 1.0, 'Quantile must be between 0 and 1');
+    assert(
+      quantile >= 0.0 && quantile <= 1.0,
+      'Quantile must be between 0 and 1',
+    );
 
     final samples = take(sampleCount).toList()..sort();
     final index = (quantile * (samples.length - 1)).round();
