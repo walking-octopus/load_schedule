@@ -26,7 +26,6 @@ class _InsightsPageState extends State {
 
     try {
       await BillService.loadBills();
-      // TODO: Generate predicted bills using uncertainty model if no data exists
     } catch (e) {
       debugPrint('Error loading bills: $e');
     } finally {
@@ -68,7 +67,7 @@ class _InsightsPageState extends State {
   Widget _buildContent() {
     final bill = BillService.getLatestBill();
     if (bill == null) {
-      return _buildEmptyState();
+      return _buildPredictedOrEmptyState();
     }
 
     final consumptionData = BillService.getMonthlyConsumption();
@@ -81,6 +80,81 @@ class _InsightsPageState extends State {
         EfficiencyRecommendationsCard(bill: bill),
         NationalComparisonCard(bill: bill),
       ],
+    );
+  }
+
+  Widget _buildPredictedOrEmptyState() {
+    return FutureBuilder<Bill?>(
+      future: BillService.getLatestBillOrPrediction(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final predictedBill = snapshot.data;
+        if (predictedBill == null) {
+          return _buildEmptyState();
+        }
+
+        // Show predicted bill with a banner indicating it's a prediction
+        final consumptionData = BillService.getMonthlyConsumption();
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+          children: [
+            _buildPredictionBanner(),
+            BillBreakdownCard(bill: predictedBill),
+            if (consumptionData.isNotEmpty) ConsumptionChart(data: consumptionData),
+            EfficiencyRecommendationsCard(bill: predictedBill),
+            NationalComparisonCard(bill: predictedBill),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPredictionBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.auto_awesome,
+            color: Theme.of(context).colorScheme.primary,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Predicted Bill',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Based on your household settings. Add actual bills for more accurate insights.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

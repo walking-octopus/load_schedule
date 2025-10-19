@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../uncertain.dart';
 import '../services/storage.dart';
 import '../core/utils.dart';
+import '../core/bill_models.dart';
 
 // ignore: unintended_html_in_doc_comment
 /// A sophisticated probabilistic bill model using Uncertain<T>
@@ -455,6 +456,29 @@ class ProbabilisticBill {
         '90% CI: [${totalKwhLower90.toStringAsFixed(1)}, ${totalKwhUpper90.toStringAsFixed(1)}] kWh\n'
         'Uncertainty: ±$uncertaintyPercent%\n'
         'Cost: €${totalAmount.toStringAsFixed(2)}';
+  }
+
+  /// Convert probabilistic bill to regular Bill for display
+  /// Uses expected values (mean of 90% CI) for display
+  Bill toRegularBill() {
+    // Import needed for ApplianceConsumption
+    final breakdown = <String, ApplianceConsumption>{};
+
+    this.breakdown.forEach((key, value) {
+      breakdown[key] = ApplianceConsumption(
+        name: value.name,
+        kwh: value.kwh,
+        amount: value.amount,
+        color: value.color,
+      );
+    });
+
+    return Bill(
+      id: id,
+      month: month,
+      totalAmount: totalAmount,
+      breakdown: breakdown,
+    );
   }
 }
 

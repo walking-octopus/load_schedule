@@ -1,5 +1,6 @@
 import '../core/bill_models.dart';
 import '../core/utils.dart';
+import '../models/probabilistic_bill_model.dart';
 import 'storage.dart';
 
 /// Service for managing bills and consumption data
@@ -73,10 +74,42 @@ class BillService {
       );
     }
 
-    // TODO: Add predicted future months using uncertainty model
-
     // Sort by month
     data.sort((a, b) => a.month.compareTo(b.month));
     return data;
+  }
+
+  /// Generate a predicted bill for a specific month using the probabilistic model
+  /// Returns null if household settings are not configured
+  static Future<Bill?> generatePredictedBill(DateTime month) async {
+    final settings = await StorageService.loadSettings();
+    if (settings == null) return null;
+
+    // Check if we already have an actual bill for this month
+    if (hasBillForMonth(month)) {
+      return null;
+    }
+
+    final weatherProfile = WeatherProfile.typical(month);
+    final model = ProbabilisticBillModel(
+      settings: settings,
+      month: month,
+      weatherProfile: weatherProfile,
+    );
+
+    final probabilisticBill = model.generateBill(sampleCount: 2000);
+    return probabilisticBill.toRegularBill();
+  }
+
+  /// Get the latest bill (actual or predicted)
+  /// If no actual bills exist, generates a prediction for current month
+  static Future<Bill?> getLatestBillOrPrediction() async {
+    final actualBill = getLatestBill();
+    if (actualBill != null) return actualBill;
+
+    // Generate prediction for current month
+    final now = DateTime.now();
+    final currentMonth = DateTime(now.year, now.month);
+    return await generatePredictedBill(currentMonth);
   }
 }
