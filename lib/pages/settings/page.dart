@@ -15,8 +15,6 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final _formKey = GlobalKey<FormState>();
   bool _fetchingLocation = false;
-  Timer? _debounce;
-  List<AddressSuggestion> _addressSuggestions = [];
 
   // Your Home
   String _address = '';
@@ -85,33 +83,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _searchAddress(String query) async {
-    if (query.isEmpty) {
-      setState(() => _addressSuggestions = []);
-      return;
-    }
-
-    final suggestions = await GeocodingService.searchAddress(query);
-    if (mounted) {
-      setState(() => _addressSuggestions = suggestions);
-    }
-  }
-
-  void _onAddressChanged(String value) {
-    // Cancel previous timer
-    _debounce?.cancel();
-
-    // Set new timer for debouncing (wait 500ms after user stops typing)
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      _searchAddress(value);
-    });
-  }
 
   void _showResetConfirmDialog(BuildContext context) {
     showDialog(
@@ -288,7 +259,8 @@ class _SettingsPageState extends State<SettingsPage> {
         if (textEditingValue.text.isEmpty) {
           return const Iterable<AddressSuggestion>.empty();
         }
-        return _addressSuggestions;
+        // Search directly without using state - avoids rebuilds
+        return await GeocodingService.searchAddress(textEditingValue.text);
       },
       displayStringForOption: (AddressSuggestion option) => option.displayName,
       onSelected: (AddressSuggestion selection) {
@@ -335,12 +307,6 @@ class _SettingsPageState extends State<SettingsPage> {
               },
               onChanged: (value) {
                 _address = value;
-                // Defer state updates to avoid setState during build
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    _onAddressChanged(value);
-                  }
-                });
               },
             );
           },
