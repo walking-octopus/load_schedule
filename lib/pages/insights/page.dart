@@ -81,7 +81,7 @@ class _InsightsPageState extends State {
     final consumptionData = BillService.getMonthlyConsumption();
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
       children: [
         BillBreakdownCard(bill: bill),
         ConsumptionChart(data: consumptionData),
@@ -97,8 +97,14 @@ class _InsightsPageState extends State {
     final yearController = TextEditingController();
     final amountController = TextEditingController();
 
+    final monthFocusNode = FocusNode();
     final yearFocusNode = FocusNode();
     final amountFocusNode = FocusNode();
+
+    // Autofocus the month field after dialog is shown
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      monthFocusNode.requestFocus();
+    });
 
     showDialog(
       context: context,
@@ -117,6 +123,7 @@ class _InsightsPageState extends State {
                       flex: 2,
                       child: TextFormField(
                         controller: monthController,
+                        focusNode: monthFocusNode,
                         decoration: const InputDecoration(
                           labelText: 'Month',
                           hintText: 'MM',
