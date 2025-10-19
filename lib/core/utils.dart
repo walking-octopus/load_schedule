@@ -275,48 +275,59 @@ class BillUtils {
   /// Average electricity price in EUR/kWh - imported from AppConstants
   static const double averageElectricityPricePerKwh = AppConstants.averageElectricityPricePerKwh;
 
-  /// Create default bill breakdown based on total amount
+  /// Create default bill breakdown based on total kWh consumption
   static Map<String, ApplianceConsumption> createDefaultBillBreakdown(
     double totalAmount,
   ) {
-    // Convert EUR to kWh by dividing by price per kWh
-    double eurToKwh(double euros) => euros / averageElectricityPricePerKwh;
+    // First, calculate total kWh from the bill amount
+    final totalKwh = totalAmount / averageElectricityPricePerKwh;
+
+    // Define typical consumption percentages for each appliance
+    // Based on kWh consumption, not EUR
+    final consumptionBreakdown = {
+      'Heating': 0.45,
+      'Water Heater': 0.20,
+      'Refrigerator': 0.12,
+      'Washing Machine': 0.08,
+      'Dishwasher': 0.07,
+      'Other': 0.08,
+    };
 
     return {
       'Heating': ApplianceConsumption(
         name: 'Heating',
-        amount: totalAmount * 0.45,
-        kwh: eurToKwh(totalAmount * 0.45),
+        kwh: totalKwh * consumptionBreakdown['Heating']!,
+        amount: totalKwh * consumptionBreakdown['Heating']! * averageElectricityPricePerKwh,
         color: heatingColor,
       ),
       'Water Heater': ApplianceConsumption(
         name: 'Water Heater',
-        amount: totalAmount * 0.20,
-        kwh: eurToKwh(totalAmount * 0.20),
+        kwh: totalKwh * consumptionBreakdown['Water Heater']!,
+        amount: totalKwh * consumptionBreakdown['Water Heater']! * averageElectricityPricePerKwh,
         color: waterHeaterColor,
       ),
       'Refrigerator': ApplianceConsumption(
         name: 'Refrigerator',
-        amount: totalAmount * 0.12,
-        kwh: eurToKwh(totalAmount * 0.12),
+        kwh: totalKwh * consumptionBreakdown['Refrigerator']!,
+        amount: totalKwh * consumptionBreakdown['Refrigerator']! * averageElectricityPricePerKwh,
         color: refrigeratorColor,
       ),
       'Washing Machine': ApplianceConsumption(
         name: 'Washing Machine',
-        amount: totalAmount * 0.08,
-        kwh: eurToKwh(totalAmount * 0.08),
+        kwh: totalKwh * consumptionBreakdown['Washing Machine']!,
+        amount: totalKwh * consumptionBreakdown['Washing Machine']! * averageElectricityPricePerKwh,
         color: washingMachineColor,
       ),
       'Dishwasher': ApplianceConsumption(
         name: 'Dishwasher',
-        amount: totalAmount * 0.07,
-        kwh: eurToKwh(totalAmount * 0.07),
+        kwh: totalKwh * consumptionBreakdown['Dishwasher']!,
+        amount: totalKwh * consumptionBreakdown['Dishwasher']! * averageElectricityPricePerKwh,
         color: dishwasherColor,
       ),
       'Other': ApplianceConsumption(
         name: 'Other',
-        amount: totalAmount * 0.08,
-        kwh: eurToKwh(totalAmount * 0.08),
+        kwh: totalKwh * consumptionBreakdown['Other']!,
+        amount: totalKwh * consumptionBreakdown['Other']! * averageElectricityPricePerKwh,
         color: otherColor,
       ),
     };
