@@ -254,7 +254,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildAddressField() {
     return Autocomplete<AddressSuggestion>(
-      key: ValueKey(_address), // Rebuild when address changes
       optionsBuilder: (TextEditingValue textEditingValue) async {
         if (textEditingValue.text.isEmpty) {
           return const Iterable<AddressSuggestion>.empty();
