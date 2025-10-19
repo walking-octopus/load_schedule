@@ -15,8 +15,8 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final _formKey = GlobalKey<FormState>();
   bool _fetchingLocation = false;
-  DateTime? _lastSearchTime;
-  String _lastSearchQuery = '';
+  Timer? _debounceTimer;
+  final Map<String, List<AddressSuggestion>> _searchCache = {};
 
   // Your Home
   String _address = '';
@@ -51,6 +51,12 @@ class _SettingsPageState extends State<SettingsPage> {
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadSettings() async {
@@ -257,35 +263,20 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildAddressField() {
     return Autocomplete<AddressSuggestion>(
       optionsBuilder: (TextEditingValue textEditingValue) async {
-        final query = textEditingValue.text;
+        final query = textEditingValue.text.trim();
 
         if (query.isEmpty || query.length < 3) {
           return const Iterable<AddressSuggestion>.empty();
         }
 
-        // Debounce: only search if 500ms have passed since last search
-        // or if the query has changed significantly
-        final now = DateTime.now();
-        if (_lastSearchTime != null && query == _lastSearchQuery) {
-          final timeSinceLastSearch = now.difference(_lastSearchTime!);
-          if (timeSinceLastSearch.inMilliseconds < 500) {
-            return const Iterable<AddressSuggestion>.empty();
-          }
+        // Check cache first
+        if (_searchCache.containsKey(query)) {
+          return _searchCache[query]!;
         }
 
-        _lastSearchTime = now;
-        _lastSearchQuery = query;
-
-        // Add a small delay to allow for more typing
-        await Future.delayed(const Duration(milliseconds: 300));
-
-        // Check if query has changed during the delay
-        if (query != textEditingValue.text) {
-          return const Iterable<AddressSuggestion>.empty();
-        }
-
-        // Search directly without using state - avoids rebuilds
-        return await GeocodingService.searchAddress(query);
+        // Return empty immediately, actual search happens after debounce
+        // This prevents multiple simultaneous requests
+        return const Iterable<AddressSuggestion>.empty();
       },
       displayStringForOption: (AddressSuggestion option) => option.displayName,
       onSelected: (AddressSuggestion selection) {
@@ -332,6 +323,21 @@ class _SettingsPageState extends State<SettingsPage> {
               },
               onChanged: (value) {
                 _address = value;
+
+                // Debounced search
+                _debounceTimer?.cancel();
+                if (value.trim().length >= 3) {
+                  _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
+                    final results = await GeocodingService.searchAddress(value.trim());
+                    if (mounted) {
+                      setState(() {
+                        _searchCache[value.trim()] = results;
+                      });
+                      // Trigger autocomplete to show results
+                      controller.text = value;
+                    }
+                  });
+                }
               },
             );
           },
