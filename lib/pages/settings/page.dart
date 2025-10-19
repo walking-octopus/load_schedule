@@ -78,14 +78,13 @@ class _SettingsPageState extends State<SettingsPage> {
           settings.longitude,
         );
         if (address != null && mounted) {
-          // Update address state first
-          _address = address;
-          // Defer controller update to avoid setState during build
+          // Defer both state and controller updates to avoid setState during build
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() {
-                _addressController.text = address;
+                _address = address;
               });
+              _addressController.text = address;
             }
           });
         }
