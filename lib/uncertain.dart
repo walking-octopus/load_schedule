@@ -227,6 +227,9 @@ extension UncertainNumeric<T extends num> on Uncertain<T> {
       return Uncertain<T>._withNode(newNode);
     } else if (other is T) {
       return this + Uncertain<T>(() => other);
+    } else if (T == double && other is num) {
+      // Handle int addition with Uncertain<double>
+      return this + Uncertain<T>(() => other.toDouble() as T);
     }
     throw ArgumentError('Unsupported type for addition');
   }
@@ -242,6 +245,9 @@ extension UncertainNumeric<T extends num> on Uncertain<T> {
       return Uncertain<T>._withNode(newNode);
     } else if (other is T) {
       return this - Uncertain<T>(() => other);
+    } else if (T == double && other is num) {
+      // Handle int subtraction with Uncertain<double>
+      return this - Uncertain<T>(() => other.toDouble() as T);
     }
     throw ArgumentError('Unsupported type for subtraction');
   }
@@ -257,6 +263,9 @@ extension UncertainNumeric<T extends num> on Uncertain<T> {
       return Uncertain<T>._withNode(newNode);
     } else if (other is T) {
       return this * Uncertain<T>(() => other);
+    } else if (T == double && other is num) {
+      // Handle int multiplication with Uncertain<double>
+      return this * Uncertain<T>(() => other.toDouble() as T);
     }
     throw ArgumentError('Unsupported type for multiplication');
   }
@@ -272,6 +281,9 @@ extension UncertainNumeric<T extends num> on Uncertain<T> {
       return Uncertain<T>._withNode(newNode);
     } else if (other is T) {
       return this / Uncertain<T>(() => other);
+    } else if (T == double && other is num) {
+      // Handle int division with Uncertain<double>
+      return this / Uncertain<T>(() => other.toDouble() as T);
     }
     throw ArgumentError('Unsupported type for division');
   }
