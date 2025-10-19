@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../services/geocoding_service.dart';
-import '../../services/settings_storage.dart' as settings_storage;
+import '../../services/storage.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -83,6 +83,44 @@ class _SettingsPageState extends State<SettingsPage> {
     });
   }
 
+  void _showResetConfirmDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Text('Reset All Data'),
+        content: const Text(
+          'This will permanently delete all your settings and bills. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              // Capture navigator and messenger before async gap
+              final navigator = Navigator.of(dialogContext);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+              // Clear all storage
+              await StorageService.clearAllData();
+
+              // Close dialog and show confirmation
+              navigator.pop();
+              scaffoldMessenger.showSnackBar(
+                const SnackBar(content: Text('All data has been reset')),
+              );
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _fetchGPSLocation() async {
     setState(() => _fetchingLocation = true);
 
@@ -151,7 +189,16 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Household Settings')),
+      appBar: AppBar(
+        title: const Text('Household Settings'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Reset all data',
+            onPressed: () => _showResetConfirmDialog(context),
+          ),
+        ],
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -255,6 +302,12 @@ class _SettingsPageState extends State<SettingsPage> {
                         tooltip: 'Use GPS location',
                       ),
               ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Address is required';
+                }
+                return null;
+              },
               onChanged: (value) {
                 setState(() => _address = value);
                 _addressController.text = value;
@@ -273,6 +326,16 @@ class _SettingsPageState extends State<SettingsPage> {
         border: OutlineInputBorder(),
       ),
       keyboardType: TextInputType.number,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Area is required';
+        }
+        final parsed = double.tryParse(value);
+        if (parsed == null || parsed <= 0) {
+          return 'Please enter a valid area';
+        }
+        return null;
+      },
       onChanged: (value) {
         final parsed = double.tryParse(value);
         if (parsed != null) setState(() => _area = parsed);
@@ -349,6 +412,16 @@ class _SettingsPageState extends State<SettingsPage> {
         border: OutlineInputBorder(),
       ),
       keyboardType: TextInputType.number,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Construction year is required';
+        }
+        final parsed = int.tryParse(value);
+        if (parsed == null || parsed < 1800 || parsed > DateTime.now().year) {
+          return 'Please enter a valid year';
+        }
+        return null;
+      },
       onChanged: (value) {
         final parsed = int.tryParse(value);
         if (parsed != null) setState(() => _constructionYear = parsed);
@@ -463,6 +536,18 @@ class _SettingsPageState extends State<SettingsPage> {
         border: OutlineInputBorder(),
       ),
       keyboardType: TextInputType.number,
+      validator: (value) {
+        if (_hasEV) {
+          if (value == null || value.isEmpty) {
+            return 'Daily km is required for EV';
+          }
+          final parsed = double.tryParse(value);
+          if (parsed == null || parsed < 0) {
+            return 'Please enter a valid distance';
+          }
+        }
+        return null;
+      },
       onChanged: (value) {
         final parsed = double.tryParse(value);
         if (parsed != null) setState(() => _dailyKm = parsed);
@@ -478,6 +563,18 @@ class _SettingsPageState extends State<SettingsPage> {
         border: OutlineInputBorder(),
       ),
       keyboardType: TextInputType.number,
+      validator: (value) {
+        if (_hasEV) {
+          if (value == null || value.isEmpty) {
+            return 'Battery capacity is required for EV';
+          }
+          final parsed = double.tryParse(value);
+          if (parsed == null || parsed <= 0) {
+            return 'Please enter a valid capacity';
+          }
+        }
+        return null;
+      },
       onChanged: (value) {
         final parsed = double.tryParse(value);
         if (parsed != null) setState(() => _batteryCapacity = parsed);
@@ -493,6 +590,14 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       onPressed: () async {
         if (_formKey.currentState!.validate()) {
+          // Additional check for address
+          if (_address.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Address is required')),
+            );
+            return;
+          }
+
           try {
             // If user typed an address but didn't select from suggestions,
             // geocode it to get coordinates
@@ -503,11 +608,33 @@ class _SettingsPageState extends State<SettingsPage> {
               if (suggestions.isNotEmpty) {
                 _latitude = suggestions.first.latitude;
                 _longitude = suggestions.first.longitude;
+              } else {
+                // Address couldn't be geocoded
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Could not find coordinates for this address. Please select from suggestions.'),
+                    ),
+                  );
+                }
+                return;
               }
             }
 
+            // Verify address was successfully geocoded
+            if (_latitude == 0.0 && _longitude == 0.0) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please select an address from the suggestions'),
+                  ),
+                );
+              }
+              return;
+            }
+
             // Create household settings
-            final settings = settings_storage.HouseholdSettings(
+            final settings = HouseholdSettings(
               address: _address,
               latitude: _latitude,
               longitude: _longitude,
@@ -530,9 +657,7 @@ class _SettingsPageState extends State<SettingsPage> {
             );
 
             // Save settings
-            await settings_storage.SettingsStorageService.saveSettings(
-              settings,
-            );
+            await StorageService.saveSettings(settings);
 
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
