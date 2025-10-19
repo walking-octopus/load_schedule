@@ -1,11 +1,77 @@
+import 'package:flutter/foundation.dart';
 import '../core/bill_models.dart';
 import '../core/utils.dart';
 import '../models/probabilistic_bill_model.dart';
 import 'storage.dart';
 
+// Top-level function for compute() isolate
+ProbabilisticBill _generateBillInIsolate(Map<String, dynamic> params) {
+  final settings = HouseholdSettings.fromJson(params['settings'] as Map<String, dynamic>);
+  final month = DateTime.fromMillisecondsSinceEpoch(params['monthMillis'] as int);
+  final sampleCount = params['sampleCount'] as int;
+
+  final weatherProfile = WeatherProfile.typical(month);
+  final model = ProbabilisticBillModel(
+    settings: settings,
+    month: month,
+    weatherProfile: weatherProfile,
+  );
+
+  return model.generateBill(sampleCount: sampleCount);
+}
+
 /// Service for managing bills and consumption data
 class BillService {
   static final List<Bill> _bills = [];
+
+  // Cache for generated bills to avoid expensive recomputation
+  static final Map<String, ProbabilisticBill> _billCache = {};
+  static HouseholdSettings? _cachedSettings;
+
+  /// Generate cache key for a specific month and settings
+  static String _getCacheKey(DateTime month, HouseholdSettings settings) {
+    // Include key settings that affect bill generation
+    return '${month.year}-${month.month}_${settings.hashCode}';
+  }
+
+  /// Clear the bill cache (e.g., when settings change)
+  static void clearCache() {
+    _billCache.clear();
+    _cachedSettings = null;
+  }
+
+  /// Generate a bill using an isolate to avoid blocking the UI thread
+  /// Results are cached to avoid regenerating the same bill
+  static Future<ProbabilisticBill> _generateBillAsync(
+    HouseholdSettings settings,
+    DateTime month,
+    int sampleCount,
+  ) async {
+    // Check if settings have changed, if so clear cache
+    if (_cachedSettings != null && _cachedSettings.hashCode != settings.hashCode) {
+      clearCache();
+    }
+    _cachedSettings = settings;
+
+    // Check cache first
+    final cacheKey = _getCacheKey(month, settings);
+    if (_billCache.containsKey(cacheKey)) {
+      return _billCache[cacheKey]!;
+    }
+
+    // Generate new bill and cache it
+    final bill = await compute(
+      _generateBillInIsolate,
+      {
+        'settings': settings.toJson(),
+        'monthMillis': month.millisecondsSinceEpoch,
+        'sampleCount': sampleCount,
+      },
+    );
+
+    _billCache[cacheKey] = bill;
+    return bill;
+  }
 
   /// Save a bill
   static Future<void> saveBill(Bill bill) async {
@@ -23,15 +89,12 @@ class BillService {
     final settings = await StorageService.loadSettings();
 
     if (settings != null) {
-      // Use probabilistic model to generate realistic breakdown
-      final weatherProfile = WeatherProfile.typical(month);
-      final model = ProbabilisticBillModel(
-        settings: settings,
-        month: month,
-        weatherProfile: weatherProfile,
+      // Use probabilistic model to generate realistic breakdown (using isolate)
+      final probabilisticBill = await _generateBillAsync(
+        settings,
+        month,
+        1000,
       );
-
-      final probabilisticBill = model.generateBill(sampleCount: 1000);
 
       // Scale the breakdown to match the user's actual total amount
       final modelTotal = probabilisticBill.totalAmount;
@@ -135,15 +198,12 @@ class BillService {
           continue;
         }
 
-        // Generate prediction
-        final weatherProfile = WeatherProfile.typical(futureMonth);
-        final model = ProbabilisticBillModel(
-          settings: settings,
-          month: futureMonth,
-          weatherProfile: weatherProfile,
+        // Generate prediction using isolate to avoid blocking UI
+        final probabilisticBill = await _generateBillAsync(
+          settings,
+          futureMonth,
+          1000,
         );
-
-        final probabilisticBill = model.generateBill(sampleCount: 1000);
 
         data.add(
           MonthlyConsumption(
@@ -171,14 +231,11 @@ class BillService {
       return null;
     }
 
-    final weatherProfile = WeatherProfile.typical(month);
-    final model = ProbabilisticBillModel(
-      settings: settings,
-      month: month,
-      weatherProfile: weatherProfile,
+    final probabilisticBill = await _generateBillAsync(
+      settings,
+      month,
+      2000,
     );
-
-    final probabilisticBill = model.generateBill(sampleCount: 2000);
     return probabilisticBill.toRegularBill();
   }
 

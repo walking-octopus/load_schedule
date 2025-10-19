@@ -14,7 +14,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final List<ScheduledLoad> pendingLoads = [];
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -24,10 +23,11 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadPersistedLoads() async {
     final loads = await StorageService.loadLoads();
-    setState(() {
-      pendingLoads.addAll(loads);
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        pendingLoads.addAll(loads);
+      });
+    }
   }
 
   Future<void> _saveLoads() async {
@@ -41,23 +41,21 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Schedule'),
       ),
       body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  const PriceChartCard(),
-                  Expanded(
-                    child: pendingLoads.isEmpty
-                        ? const EmptyStateWidget()
-                        : LoadsList(
-                            loads: pendingLoads,
-                            onRemove: _handleRemoveLoad,
-                            onUndo: _handleUndoRemove,
-                            onTogglePin: _handleTogglePin,
-                          ),
-                  ),
-                ],
-              ),
+        child: Column(
+          children: [
+            const PriceChartCard(),
+            Expanded(
+              child: pendingLoads.isEmpty
+                  ? const EmptyStateWidget()
+                  : LoadsList(
+                      loads: pendingLoads,
+                      onRemove: _handleRemoveLoad,
+                      onUndo: _handleUndoRemove,
+                      onTogglePin: _handleTogglePin,
+                    ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _navigateToSchedulePage,

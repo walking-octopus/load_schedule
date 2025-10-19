@@ -12,6 +12,8 @@ class InsightsPage extends StatefulWidget {
 }
 
 class _InsightsPageState extends State {
+  Bill? _latestBill;
+  List<MonthlyConsumption> _consumptionData = [];
   bool _isLoading = true;
 
   @override
@@ -21,16 +23,20 @@ class _InsightsPageState extends State {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
-    try {
-      await BillService.loadBills();
-    } catch (e) {
-      debugPrint('Error loading bills: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    await BillService.loadBills();
+    _latestBill = BillService.getLatestBill() ??
+        await BillService.getLatestBillOrPrediction();
+
+    _consumptionData = await BillService.getMonthlyConsumption();
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -56,9 +62,7 @@ class _InsightsPageState extends State {
         ],
       ),
 
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildContent(),
+      body: _buildContent(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddBillDialog,
         icon: const Icon(Icons.add),
@@ -68,72 +72,26 @@ class _InsightsPageState extends State {
   }
 
   Widget _buildContent() {
-    final bill = BillService.getLatestBill();
-    if (bill == null) {
-      return _buildPredictedOrEmptyState();
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator.adaptive());
     }
 
-    return FutureBuilder<List<MonthlyConsumption>>(
-      future: BillService.getMonthlyConsumption(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    if (_latestBill == null) {
+      return _buildEmptyState();
+    }
 
-        final consumptionData = snapshot.data ?? [];
+    final isPredicted = BillService.getLatestBill() == null;
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-          children: [
-            BillBreakdownCard(bill: bill),
-            if (consumptionData.isNotEmpty)
-              ConsumptionChart(data: consumptionData),
-            EfficiencyRecommendationsCard(bill: bill),
-            NationalComparisonCard(bill: bill),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildPredictedOrEmptyState() {
-    return FutureBuilder<Bill?>(
-      future: BillService.getLatestBillOrPrediction(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final predictedBill = snapshot.data;
-        if (predictedBill == null) {
-          return _buildEmptyState();
-        }
-
-        // Show predicted bill with a banner indicating it's a prediction
-        return FutureBuilder<List<MonthlyConsumption>>(
-          future: BillService.getMonthlyConsumption(),
-          builder: (context, consumptionSnapshot) {
-            if (consumptionSnapshot.connectionState ==
-                ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final consumptionData = consumptionSnapshot.data ?? [];
-
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-              children: [
-                _buildPredictionBanner(),
-                BillBreakdownCard(bill: predictedBill),
-                if (consumptionData.isNotEmpty)
-                  ConsumptionChart(data: consumptionData),
-                EfficiencyRecommendationsCard(bill: predictedBill),
-                NationalComparisonCard(bill: predictedBill),
-              ],
-            );
-          },
-        );
-      },
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+      children: [
+        if (isPredicted) _buildPredictionBanner(),
+        BillBreakdownCard(bill: _latestBill!),
+        if (_consumptionData.isNotEmpty)
+          ConsumptionChart(data: _consumptionData),
+        EfficiencyRecommendationsCard(bill: _latestBill!),
+        NationalComparisonCard(bill: _latestBill!),
+      ],
     );
   }
 

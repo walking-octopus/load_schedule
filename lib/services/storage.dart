@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/models.dart';
 import '../core/bill_models.dart';
 import '../core/utils.dart';
+import 'bill_service.dart';
 
 /// Household settings for electricity modeling
 class HouseholdSettings {
@@ -103,6 +104,48 @@ class HouseholdSettings {
       evDailyKm: json['evDailyKm'] as double,
       evBatteryCapacity: json['evBatteryCapacity'] as double,
     );
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    address,
+    latitude,
+    longitude,
+    area,
+    occupants,
+    buildingType,
+    constructionYear,
+    heatingType,
+    insulationRating,
+    Object.hashAll(applianceUsage.entries.map((e) => Object.hash(e.key, e.value))),
+    evDailyKm,
+    evBatteryCapacity,
+  );
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! HouseholdSettings) return false;
+    return address == other.address &&
+        latitude == other.latitude &&
+        longitude == other.longitude &&
+        area == other.area &&
+        occupants == other.occupants &&
+        buildingType == other.buildingType &&
+        constructionYear == other.constructionYear &&
+        heatingType == other.heatingType &&
+        insulationRating == other.insulationRating &&
+        evDailyKm == other.evDailyKm &&
+        evBatteryCapacity == other.evBatteryCapacity &&
+        _mapEquals(applianceUsage, other.applianceUsage);
+  }
+
+  static bool _mapEquals(Map<String, double> a, Map<String, double> b) {
+    if (a.length != b.length) return false;
+    for (final key in a.keys) {
+      if (!b.containsKey(key) || a[key] != b[key]) return false;
+    }
+    return true;
   }
 }
 
@@ -370,6 +413,9 @@ class StorageService {
       final prefs = await SharedPreferences.getInstance();
       final jsonString = jsonEncode(settings.toJson());
       await prefs.setString(_settingsKey, jsonString);
+
+      // Clear bill cache when settings change
+      BillService.clearCache();
     } catch (e) {
       throw Exception('Failed to save settings: $e');
     }
