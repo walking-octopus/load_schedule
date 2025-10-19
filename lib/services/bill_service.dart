@@ -13,6 +13,47 @@ class BillService {
     await StorageService.saveBills(_bills);
   }
 
+  /// Create a bill breakdown using the probabilistic model
+  /// If settings are available, generates realistic breakdown based on household
+  /// Otherwise falls back to static percentages
+  static Future<Map<String, ApplianceConsumption>> createBillBreakdown(
+    double totalAmount,
+    DateTime month,
+  ) async {
+    final settings = await StorageService.loadSettings();
+
+    if (settings != null) {
+      // Use probabilistic model to generate realistic breakdown
+      final weatherProfile = WeatherProfile.typical(month);
+      final model = ProbabilisticBillModel(
+        settings: settings,
+        month: month,
+        weatherProfile: weatherProfile,
+      );
+
+      final probabilisticBill = model.generateBill(sampleCount: 1000);
+
+      // Scale the breakdown to match the user's actual total amount
+      final modelTotal = probabilisticBill.totalAmount;
+      final scaleFactor = totalAmount / modelTotal;
+
+      final breakdown = <String, ApplianceConsumption>{};
+      probabilisticBill.breakdown.forEach((key, value) {
+        breakdown[key] = ApplianceConsumption(
+          name: value.name,
+          kwh: value.kwh * scaleFactor,
+          amount: value.amount * scaleFactor,
+          color: value.color,
+        );
+      });
+
+      return breakdown;
+    } else {
+      // Fall back to static breakdown
+      return BillUtils.createDefaultBillBreakdown(totalAmount);
+    }
+  }
+
   /// Load bills from storage
   static Future<void> loadBills() async {
     final loadedBills = await StorageService.loadBills();

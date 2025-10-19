@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/bill_service.dart';
 import '../../core/bill_models.dart';
-import '../../core/utils.dart';
 import '../settings/page.dart';
 import 'widgets.dart';
 
@@ -379,17 +378,24 @@ class _InsightsPageState extends State {
                 final month = int.parse(monthController.text);
                 final year = int.parse(yearController.text);
                 final amount = double.parse(amountController.text);
-
-                final bill = Bill(
-                  id: 'bill_${DateTime(year, month).millisecondsSinceEpoch}',
-                  month: DateTime(year, month),
-                  totalAmount: amount,
-                  breakdown: BillUtils.createDefaultBillBreakdown(amount),
-                );
+                final billMonth = DateTime(year, month);
 
                 // Capture navigator and messenger before async gap
                 final navigator = Navigator.of(context);
                 final messenger = ScaffoldMessenger.of(context);
+
+                // Create breakdown using probabilistic model
+                final breakdown = await BillService.createBillBreakdown(
+                  amount,
+                  billMonth,
+                );
+
+                final bill = Bill(
+                  id: 'bill_${billMonth.millisecondsSinceEpoch}',
+                  month: billMonth,
+                  totalAmount: amount,
+                  breakdown: breakdown,
+                );
 
                 await BillService.saveBill(bill);
                 await _loadData();
