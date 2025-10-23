@@ -4,7 +4,7 @@ Schedule heavy loads for optimal dynamic tariff, desegregate your bills into pro
 
 > A 2025 HackForVilnius project
 
-[🌐 Web Demo](https://walking-octopus.github.io/load_schedule/) | [📱 Download APK]([https://github.com/walking-octopus/load_schedule/actions](https://nightly.link/walking-octopus/load_schedule/workflows/build-and-deploy/main/powertime-android.zip))
+[🌐 Web Demo](https://walking-octopus.github.io/load_schedule/) | [📱 Download APK](https://nightly.link/walking-octopus/load_schedule/workflows/build-and-deploy/main/powertime-android.zip)
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/dbf5c9d5-3d16-4bbe-ab7a-5e9631d6ad83" alt="Schedule loads" width="200"/>
