@@ -7,10 +7,10 @@ Schedule heavy loads for optimal dynamic tariff, desegregate your bills into pro
 [🌐 Web Demo](https://walking-octopus.github.io/load_schedule/) | [📱 Download APK]([https://github.com/walking-octopus/load_schedule/actions](https://nightly.link/walking-octopus/load_schedule/workflows/build-and-deploy/main/powertime-android.zip))
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/dbf5c9d5-3d16-4bbe-ab7a-5e9631d6ad83" alt="Schedule loads" width="225"/>
-  <img src="https://github.com/user-attachments/assets/002df84b-6e26-4eec-8138-d60348f0e293" alt="Analyze bills" width="225"/>
-  <img src="https://github.com/user-attachments/assets/d091b11a-62f7-48ff-aa8e-a8df57444ea6" alt="Predict the future" width="225"/>
-  <img src="https://github.com/user-attachments/assets/5a5d6bba-66fd-46d9-abd9-e752086924d0" alt="Compare to others; Get efficiency tips" width="225"/>
+  <img src="https://github.com/user-attachments/assets/dbf5c9d5-3d16-4bbe-ab7a-5e9631d6ad83" alt="Schedule loads" width="200"/>
+  <img src="https://github.com/user-attachments/assets/002df84b-6e26-4eec-8138-d60348f0e293" alt="Analyze bills" width="200"/>
+  <img src="https://github.com/user-attachments/assets/d091b11a-62f7-48ff-aa8e-a8df57444ea6" alt="Predict the future" width="200"/>
+  <img src="https://github.com/user-attachments/assets/5a5d6bba-66fd-46d9-abd9-e752086924d0" alt="Compare to others; Get efficiency tips" width="200"/>
 </div>
 
 ## Features
